@@ -1,3 +1,5 @@
+import logging
+from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.dom import NoMatches
 from textual.containers import Horizontal, Vertical
@@ -14,7 +16,10 @@ from textual.widgets import (
     TextArea,
     Tree,
 )
+from textual.widgets._tree import TreeNode
 from connections import Connection, Env
+
+logger = logging.getLogger(__name__)
 
 ROWS = [
     ("lane", "swimmer", "country", "time"),
@@ -65,17 +70,46 @@ class GridLayoutExample(App):
         tree.root.expand()
 
         for connection in CONNECTIONS:
-            conn = tree.root.add(connection.id)
-            for schema_name in connection.schemas():
-                schema = conn.add(f"[D] {schema_name}", expand=True)
-                for table_name in connection.tables(schema_name):
-                    table = schema.add(f"[T] {table_name}")
-                    for column_def in connection.columns(schema_name, table_name):
-                        column = table.add(f"[C] {column_def[0]}")
+            tree.root.add(connection.id)
+        return tree
+
+    def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
+        label: str = event.node.label.plain
+        if label.startswith("["):
+            match label[1]:
+                case "S":
+                    for table_name in self.get_connection_by_name(
+                        event.node.parent.label.plain
+                    ).tables(label[4:]):
+                        event.node.add(f"[T] {table_name}")
+                case "T":
+                    for column_def in self.get_connection_by_name(
+                        event.node.parent.parent.label.plain
+                    ).columns(event.node.parent.label.plain[4:], label[4:]):
+                        column = event.node.add(f"[C] {column_def[0]}")
                         column.add_leaf(column_def[1])
                         if column_def[2]:
                             column.add_leaf("NOT NULL")
-        return tree
+        elif event.node.parent is not None and event.node.parent.is_root:
+            for schema_name in self.get_connection_by_name(
+                event.node.label.plain
+            ).schemas():
+                event.node.add(f"[S] {schema_name}")
+
+    def get_connection_by_node(self, node: TreeNode) -> Connection:
+        base_name: str = self.get_base_node(node).label.plain
+        return self.get_connection_by_name(base_name)
+
+    def get_base_node(self, node: TreeNode) -> TreeNode:
+        if node.label.plain.startswith("["):
+            self.get_base_node(node.parent)
+        else:
+            return node
+
+    def get_connection_by_name(self, name: str) -> Connection:
+        for connection in CONNECTIONS:
+            if name == connection.id:
+                return connection
 
     def input_area(self) -> TextArea:
         return TextArea.code_editor("SELECT * FROM DUAL;", language="sql")
