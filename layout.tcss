@@ -1,0 +1,25 @@
+.box {
+    height: 100%;
+    border: solid green;
+}
+
+.column {
+    width: 1fr;
+}
+
+.column4 {
+    width: 4fr;
+}
+
+.row {
+  height: 3;
+}
+
+.half_height {
+  height: 50%;
+}
+
+.full_height {
+  height: 100%;
+}
+
