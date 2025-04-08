@@ -44,7 +44,7 @@ class GridLayoutExample(App):
             with Horizontal(classes="row box"):
                 yield Header("Header")
             with Horizontal():
-                with Vertical(classes="box"):
+                with Vertical(classes="box column1"):
                     yield self.menu()
                 with TabbedContent(classes="box column4"):
                     with TabPane("Initial", id="initial"):
@@ -61,12 +61,20 @@ class GridLayoutExample(App):
                 yield Footer()
 
     def menu(self) -> Tree[str]:
-        tree: Tree[str] = Tree("Dune")
+        tree: Tree[str] = Tree("Connections")
         tree.root.expand()
-        characters = tree.root.add("Characters", expand=True)
-        characters.add_leaf("Paul")
-        characters.add_leaf("Jessica")
-        characters.add_leaf("Chani")
+
+        for connection in CONNECTIONS:
+            conn = tree.root.add(connection.id)
+            for schema_name in connection.schemas():
+                schema = conn.add(f"[D] {schema_name}", expand=True)
+                for table_name in connection.tables(schema_name):
+                    table = schema.add(f"[T] {table_name}")
+                    for column_def in connection.columns(schema_name, table_name):
+                        column = table.add(f"[C] {column_def[0]}")
+                        column.add_leaf(column_def[1])
+                        if column_def[2]:
+                            column.add_leaf("NOT NULL")
         return tree
 
     def input_area(self) -> TextArea:

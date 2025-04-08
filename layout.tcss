@@ -4,11 +4,11 @@
 }
 
 .column {
-    width: 1fr;
+    width: 25%;
 }
 
 .column4 {
-    width: 4fr;
+    width: 75%;
 }
 
 .row {

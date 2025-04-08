@@ -44,11 +44,11 @@ class SqliteConnector(Connector):
         return tables
 
     def get_columns(self, schema: str, table: str) -> list[Column]:
-        query: str = f"SELECT NAME, TYPE FROM PRAGMA_TABLE_INFO('{table}')"
+        query: str = f"SELECT NAME, TYPE, \"notnull\" FROM PRAGMA_TABLE_INFO('{table}')"
         columns = list()
         results = self.query(query)
         for val in results:
-            columns.append(Column(val[0], val[1]))
+            columns.append(Column(val[0], val[1], bool(val[2])))
         return columns
 
     def execute(self, query: str) -> (ExecutionStatus, str):
