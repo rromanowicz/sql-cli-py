@@ -10,6 +10,11 @@ class Type(Enum):
     SqLite = 2
 
 
+class ExecutionStatus(Enum):
+    Success = 1
+    Failure = 2
+
+
 @dataclass
 class Connector(ABC):
     def __init__(self, database: str, host: str, user: str, passw: str, type: Type):
@@ -19,13 +24,25 @@ class Connector(ABC):
         self.passw = passw
         self.type = type
         self.schema_dict: dict[str, Schema] = dict()
-        self.schemas_callable: Callable[[], list[Schema]] = None
-        self.tables_callable: Callable[[str], list[Table]] = None
-        self.columns_callable: Callable[[str, str], list[Column]] = None
 
     @property
     @abstractmethod
     def connection_string(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def schemas_callable(self) -> Callable[[], list[Schema]]:
+        pass
+
+    @property
+    @abstractmethod
+    def tables_callable(self) -> Callable[[str], list[Table]]:
+        pass
+
+    @property
+    @abstractmethod
+    def columns_callable(self) -> Callable[[str, str], list[Column]]:
         pass
 
     def schemas(self) -> list[Schema]:
@@ -57,7 +74,7 @@ class Connector(ABC):
         return list(self.schema_dict.get(schema).tables.get(table.lower()).columns)
 
     @abstractmethod
-    def execute(self, query: str) -> None:
+    def execute(self, query: str) -> (ExecutionStatus, str):
         pass
 
     @abstractmethod

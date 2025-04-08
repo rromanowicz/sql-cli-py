@@ -1,19 +1,29 @@
 import sqlite3
-from connectors.connector import Connector, Type
+from sqlite3 import OperationalError
+import logging
+from connectors.connector import Connector, Type, ExecutionStatus
 from connectors.dbmodel import Schema, Table, Column
+
+logger = logging.getLogger(__name__)
 
 
 class SqliteConnector(Connector):
     def __init__(self, database):
         super().__init__(database, None, None, None, Type.SqLite)
-        self.schemas_callable = self.get_schemas
-        self.tables_callable = self.get_tables
-        self.columns_callable = self.get_columns
         with sqlite3.connect(self.connection_string()) as conn:
             conn.cursor()
 
     def connection_string(self) -> str:
         return f"{self.database}.db"
+
+    def schemas_callable(self):
+        return self.get_schemas()
+
+    def tables_callable(self, schema: str):
+        return self.get_tables(schema)
+
+    def columns_callable(self, schema: str, table: str):
+        return self.get_columns(schema, table)
 
     def get_schemas(self) -> list[Schema]:
         schemas = list()
@@ -41,14 +51,22 @@ class SqliteConnector(Connector):
             columns.append(Column(val[0], val[1]))
         return columns
 
-    def execute(self, query: str) -> None:
+    def execute(self, query: str) -> (ExecutionStatus, str):
         with sqlite3.connect(self.connection_string()) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query)
-        return None
+            try:
+                cursor = conn.cursor()
+                cursor.execute(query)
+                return (ExecutionStatus.Success, None)
+            except OperationalError as e:
+                logger.error(f"Error: {repr(e)}")
+                return (ExecutionStatus.Failure, repr(e))
 
     def query(self, query: str) -> [()]:
         with sqlite3.connect(self.connection_string()) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query)
-            return cursor.fetchall()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(query)
+                return cursor.fetchall()
+            except OperationalError as e:
+                logger.error(f"Error: {repr(e)}")
+                return [("error", repr(e))]
