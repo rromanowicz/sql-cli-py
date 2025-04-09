@@ -74,37 +74,37 @@ class GridLayoutExample(App):
         return tree
 
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
-        label: str = event.node.label.plain
-        if label.startswith("["):
-            match label[1]:
-                case "S":
-                    for table_name in self.get_connection_by_name(
-                        event.node.parent.label.plain
-                    ).tables(label[4:]):
-                        event.node.add(f"[T] {table_name}")
-                case "T":
-                    for column_def in self.get_connection_by_name(
-                        event.node.parent.parent.label.plain
-                    ).columns(event.node.parent.label.plain[4:], label[4:]):
-                        column = event.node.add(f"[C] {column_def[0]}")
-                        column.add_leaf(column_def[1])
-                        if column_def[2]:
-                            column.add_leaf("NOT NULL")
-        elif event.node.parent is not None and event.node.parent.is_root:
-            for schema_name in self.get_connection_by_name(
-                event.node.label.plain
-            ).schemas():
-                event.node.add(f"[S] {schema_name}")
+        if len(event.node.children) == 0:
+            label: str = event.node.label.plain
+            if label.startswith("["):
+                match label[1]:
+                    case "S":
+                        for table_name in self.get_connection_by_node(
+                            event.node
+                        ).tables(label[4:]):
+                            event.node.add(f"[T] {table_name}")
+                    case "T":
+                        for column_def in self.get_connection_by_node(
+                            event.node
+                        ).columns(event.node.parent.label.plain[4:], label[4:]):
+                            column = event.node.add(f"[C] {column_def[0]}")
+                            column.add_leaf(column_def[1])
+                            if column_def[2]:
+                                column.add_leaf("NOT NULL")
+            elif event.node.parent is not None and event.node.parent.is_root:
+                for schema_name in self.get_connection_by_node(event.node).schemas():
+                    event.node.add(f"[S] {schema_name}")
 
     def get_connection_by_node(self, node: TreeNode) -> Connection:
         base_name: str = self.get_base_node(node).label.plain
         return self.get_connection_by_name(base_name)
 
     def get_base_node(self, node: TreeNode) -> TreeNode:
-        if node.label.plain.startswith("["):
-            self.get_base_node(node.parent)
-        else:
+        parent_node: TreeNode = node.parent
+        if parent_node.is_root:
             return node
+        else:
+            return self.get_base_node(parent_node)
 
     def get_connection_by_name(self, name: str) -> Connection:
         for connection in CONNECTIONS:
