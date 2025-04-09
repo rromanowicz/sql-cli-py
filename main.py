@@ -74,6 +74,9 @@ class GridLayoutExample(App):
         return tree
 
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
+        self.fill_child_nodes(event)
+
+    def fill_child_nodes(self, event: Tree.NodeExpanded):
         if len(event.node.children) == 0:
             label: str = event.node.label.plain
             if label.startswith("["):
