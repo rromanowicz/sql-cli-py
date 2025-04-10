@@ -42,7 +42,10 @@ CONNECTIONS = [
 
 class GridLayoutExample(App):
     CSS_PATH = "layout.tcss"
-    BINDINGS = [("c", "clear_input", "Clear")]
+    BINDINGS = [
+        ("c", "clear_input", "Clear"),
+        ("e", "exec_query", "Execute")
+    ]
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -95,7 +98,9 @@ class GridLayoutExample(App):
                             if column_def[2]:
                                 column.add_leaf("NOT NULL")
             elif event.node.parent is not None and event.node.parent.is_root:
-                for schema_name in self.get_connection_by_node(event.node).schemas():
+                conn: Connection = self.get_connection_by_node(event.node)
+                self.add_connection_tab(conn)
+                for schema_name in conn.schemas():
                     event.node.add(f"[S] {schema_name}")
 
     def get_connection_by_node(self, node: TreeNode) -> Connection:
@@ -117,17 +122,17 @@ class GridLayoutExample(App):
     def input_area(self) -> TextArea:
         return TextArea.code_editor("SELECT * FROM DUAL;", language="sql")
 
-    def tabs(self) -> None:
+    def add_connection_tab(self, conn: Connection):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
-        for conn in CONNECTIONS:
-            pane = TabPane(conn.id)
-            pane._add_child(
-                Vertical(
-                    Horizontal(conn.input, classes="box half_height", id="input"),
-                    Horizontal(conn.results, classes="box half_height", id="results"),
-                ),
-            )
-            tabbed_content.add_pane(pane)
+        pane = TabPane(conn.id, id=conn.id)
+        pane._add_child(
+            Vertical(
+                Horizontal(conn.input, classes="box half_height", id="input"),
+                Horizontal(conn.results, classes="box half_height", id="results"),
+            ),
+        )
+        tabbed_content.add_pane(pane)
+        tabbed_content.active = pane.id
 
     def results(self) -> DataTable:
         table = DataTable()
@@ -138,12 +143,15 @@ class GridLayoutExample(App):
     def on_mount(self) -> None:
         self.title = "Header Application"
         self.sub_title = "With title and sub-title"
-        self.tabs()
 
     def action_clear_input(self) -> None:
         input = self.get_current_input()
         if input:
             input.text = ""
+
+    def action_exec_query(self):
+        tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
+        self.get_connection_by_name(tabbed_content.active_pane.id).exec_query()
 
     def get_current_input(self) -> TextArea | None:
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)

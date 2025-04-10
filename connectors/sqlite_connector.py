@@ -70,3 +70,16 @@ class SqliteConnector(Connector):
             except OperationalError as e:
                 logger.error(f"Error: {repr(e)}")
                 return [("error", repr(e))]
+
+    def query_with_names(self, query: str) -> [()]:
+        with sqlite3.connect(self.connection_string()) as conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute(query)
+                names = tuple(list(map(lambda x: x[0], cursor.description)))
+                rows = cursor.fetchall()
+                rows.insert(0, names)
+                return rows
+            except OperationalError as e:
+                logger.error(f"Error: {repr(e)}")
+                return [("error", repr(e))]

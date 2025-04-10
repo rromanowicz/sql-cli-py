@@ -78,5 +78,9 @@ class Connector(ABC):
         pass
 
     @abstractmethod
-    def query(self, quesy: str) -> [()]:
+    def query(self, query: str) -> [()]:
+        pass
+
+    @abstractmethod
+    def query_with_names(self, query: str) -> [()]:
         pass
