@@ -69,6 +69,7 @@ class Connection:
         results = self.conn.connector.query_with_names(query)
         logger.info(results[1])
         if len(results) != 0:
-            self.results.clear
+            self.results.clear()
+            self.results.columns.clear()
             self.results.add_columns(*results[0])
             self.results.add_rows(results[1:])
