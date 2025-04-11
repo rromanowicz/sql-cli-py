@@ -66,10 +66,19 @@ class Connection:
 
     def exec_query(self):
         query: str = self.input.text
-        results = self.conn.connector.query_with_names(query)
-        logger.info(results[1])
-        if len(results) != 0:
+        if query.lower().__contains__("insert ") or query.lower().__contains__(
+            "update " or query.lower().__contains__("create ")  # TODO: fix this
+        ):
+            result = self.conn.connector.execute(query)
             self.results.clear()
             self.results.columns.clear()
-            self.results.add_columns(*results[0])
-            self.results.add_rows(results[1:])
+            self.results.add_columns("Status", "msg")
+            self.results.add_rows([(result[0].name, result[1])])
+        else:
+            results = self.conn.connector.query_with_names(query)
+            logger.info(results[1])
+            if len(results) != 0:
+                self.results.clear()
+                self.results.columns.clear()
+                self.results.add_columns(*results[0])
+                self.results.add_rows(results[1:])

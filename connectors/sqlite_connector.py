@@ -1,5 +1,5 @@
 import sqlite3
-from sqlite3 import OperationalError
+from sqlite3 import OperationalError, IntegrityError
 import logging
 from connectors.connector import Connector, Type, ExecutionStatus
 from connectors.dbmodel import Schema, Table, Column
@@ -57,7 +57,7 @@ class SqliteConnector(Connector):
                 cursor = conn.cursor()
                 cursor.execute(query)
                 return (ExecutionStatus.Success, None)
-            except OperationalError as e:
+            except Exception as e:
                 logger.error(f"Error: {repr(e)}")
                 return (ExecutionStatus.Failure, repr(e))
 
@@ -76,7 +76,10 @@ class SqliteConnector(Connector):
             try:
                 cursor = conn.cursor()
                 cursor.execute(query)
-                names = tuple(list(map(lambda x: x[0], cursor.description)))
+                try:
+                    names = tuple(list(map(lambda x: x[0], cursor.description)))
+                except TypeError:
+                    names = tuple([])
                 rows = cursor.fetchall()
                 rows.insert(0, names)
                 return rows

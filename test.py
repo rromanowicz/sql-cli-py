@@ -31,6 +31,8 @@ def main():
     # print(connector.query("SELECT NAME, TYPE, \"notnull\" FROM PRAGMA_TABLE_INFO('Students')"))
     print(connector.query("select * from students"))
     print(connector.query_with_names("select * from students"))
+    print(connector.query(INSERT))
+    print(connector.query_with_names(INSERT))
 
 
 main()

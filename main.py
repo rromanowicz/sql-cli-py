@@ -145,9 +145,14 @@ class GridLayoutExample(App):
         self.sub_title = "With title and sub-title"
 
     def action_clear_input(self) -> None:
-        input = self.get_current_input()
-        if input:
-            input.text = ""
+        active_pane = self.app.query_one(TabbedContent).active_pane.id
+        conn: Connection = self.get_connection_by_name(active_pane)
+        conn.input.clear()
+        conn.results.clear()
+        conn.results.columns.clear()
+        # input = self.get_current_input()
+        # if input:
+        #     input.text = ""
 
     def action_exec_query(self):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
