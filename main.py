@@ -4,15 +4,11 @@ from textual.app import App, ComposeResult
 from textual.dom import NoMatches
 from textual.containers import Horizontal, Vertical
 from textual.widgets import (
-    DataTable,
     Footer,
     Header,
     Label,
-    Static,
-    Tab,
     TabbedContent,
     TabPane,
-    Tabs,
     TextArea,
     Tree,
 )
@@ -21,31 +17,17 @@ from connections import Connection, Env
 
 logger = logging.getLogger(__name__)
 
-ROWS = [
-    ("lane", "swimmer", "country", "time"),
-    (4, "Joseph Schooling", "Singapore", 50.39),
-    (2, "Michael Phelps", "United States", 51.14),
-    (5, "Chad le Clos", "South Africa", 51.14),
-    (6, "László Cseh", "Hungary", 51.14),
-    (3, "Li Zhuhao", "China", 51.26),
-    (8, "Mehdy Metella", "France", 51.58),
-    (7, "Tom Shields", "United States", 51.73),
-    (1, "Aleksandr Sadovnikov", "Russia", 51.84),
-    (10, "Darren Burns", "Scotland", 51.84),
-]
-
 CONNECTIONS = [
     Connection("First", Env.DEV),
     Connection("Second", Env.SIT),
+    Connection("Third", Env.SAT),
+    Connection("Fourth", Env.PROD),
 ]
 
 
-class GridLayoutExample(App):
+class SiquelClient(App):
     CSS_PATH = "layout.tcss"
-    BINDINGS = [
-        ("c", "clear_input", "Clear"),
-        ("e", "exec_query", "Execute")
-    ]
+    BINDINGS = [("c", "clear_input", "Clear"), ("e", "exec_query", "Execute")]
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -59,12 +41,6 @@ class GridLayoutExample(App):
                         with Vertical():
                             with Horizontal(classes="box full_height"):
                                 yield Label("Hello")
-                    with TabPane("Test", id="test"):
-                        with Vertical():
-                            with Horizontal(classes="box half_height"):
-                                yield self.input_area()
-                            with Horizontal(classes="box half_height"):
-                                yield self.results()
             with Horizontal(classes="row box"):
                 yield Footer()
 
@@ -73,7 +49,13 @@ class GridLayoutExample(App):
         tree.root.expand()
 
         for connection in CONNECTIONS:
-            tree.root.add(connection.id)
+            txt: Text = Text()
+            txt.append(
+                f"[{connection.env.name.upper()}] ",
+                style=f"bold {self.get_env_color(connection.env)}",
+            )
+            txt.append(connection.id)
+            tree.root.add(txt)
         return tree
 
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
@@ -83,25 +65,52 @@ class GridLayoutExample(App):
         if len(event.node.children) == 0:
             label: str = event.node.label.plain
             if label.startswith("["):
-                match label[1]:
-                    case "S":
-                        for table_name in self.get_connection_by_node(
-                            event.node
-                        ).tables(label[4:]):
-                            event.node.add(f"[T] {table_name}")
-                    case "T":
-                        for column_def in self.get_connection_by_node(
-                            event.node
-                        ).columns(event.node.parent.label.plain[4:], label[4:]):
-                            column = event.node.add(f"[C] {column_def[0]}")
-                            column.add_leaf(column_def[1])
-                            if column_def[2]:
-                                column.add_leaf("NOT NULL")
-            elif event.node.parent is not None and event.node.parent.is_root:
                 conn: Connection = self.get_connection_by_node(event.node)
-                self.add_connection_tab(conn)
-                for schema_name in conn.schemas():
-                    event.node.add(f"[S] {schema_name}")
+                match label[:3]:
+                    case "[S]":
+                        for table_name in conn.tables(self.strip_decorator(label)):
+                            event.node.add(
+                                Text()
+                                .append("[T] ", style="turquoise2")
+                                .append(table_name)
+                            )
+                    case "[T]":
+                        for column_def in conn.columns(
+                            self.strip_decorator(event.node.parent.label.plain),
+                            self.strip_decorator(label),
+                        ):
+                            txt: Text = (
+                                Text()
+                                .append("[C] ", style="turquoise2")
+                                .append(column_def[0])
+                            )
+                            if column_def[2]:
+                                txt.append(" ").append("NULL", style="red s")
+                            if column_def[3]:
+                                txt.append(" ").append("PK", style="red")
+                            column = event.node.add(txt)
+                            column.add_leaf(column_def[1])
+
+                            if column_def[2]:
+                                column.add_leaf(
+                                    Text().append("NOT NULL", style="yellow1")
+                                )
+                            if column_def[3]:
+                                column.add_leaf(
+                                    Text().append("PRIMARY KEY", style="yellow1")
+                                )
+                    case _:
+                        if event.node.parent is not None and event.node.parent.is_root:
+                            conn: Connection = self.get_connection_by_node(event.node)
+                            self.add_connection_tab(conn)
+                            for schema_name in conn.schemas():
+                                txt: Text = (
+                                    Text()
+                                    .append("[S] ", style="turquoise2")
+                                    .append(schema_name)
+                                )
+                                # event.node.add(f"[S] {schema_name}")
+                                event.node.add(txt)
 
     def get_connection_by_node(self, node: TreeNode) -> Connection:
         base_name: str = self.get_base_node(node).label.plain
@@ -116,8 +125,25 @@ class GridLayoutExample(App):
 
     def get_connection_by_name(self, name: str) -> Connection:
         for connection in CONNECTIONS:
-            if name == connection.id:
+            if self.strip_decorator(name) == connection.id:
                 return connection
+
+    def strip_decorator(self, name: str) -> str:
+        idx: int = name.find("] ")
+        if idx == -1:
+            return name
+        return name[idx + 2 :]
+
+    def get_env_color(self, env: Env) -> str:
+        match env:
+            case Env.DEV:
+                return "green"
+            case Env.SIT:
+                return "yellow1"
+            case Env.SAT:
+                return "dark_orange"
+            case Env.PROD:
+                return "red"
 
     def input_area(self) -> TextArea:
         return TextArea.code_editor("SELECT * FROM DUAL;", language="sql")
@@ -125,20 +151,21 @@ class GridLayoutExample(App):
     def add_connection_tab(self, conn: Connection):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
         pane = TabPane(conn.id, id=conn.id)
+        input: Horizontal = Horizontal(conn.input, classes="half_height", id="input")
+        input.add_class(conn.env.name.lower())
+        results: Horizontal = Horizontal(
+            conn.results, classes="half_height", id="results"
+        )
+        results.add_class(conn.env.name.lower())
+
         pane._add_child(
             Vertical(
-                Horizontal(conn.input, classes="box half_height", id="input"),
-                Horizontal(conn.results, classes="box half_height", id="results"),
+                input,
+                results,
             ),
         )
         tabbed_content.add_pane(pane)
         tabbed_content.active = pane.id
-
-    def results(self) -> DataTable:
-        table = DataTable()
-        table.add_columns(*ROWS[0])
-        table.add_rows(ROWS[1:])
-        return table
 
     def on_mount(self) -> None:
         self.title = "Header Application"
@@ -146,16 +173,17 @@ class GridLayoutExample(App):
 
     def action_clear_input(self) -> None:
         active_pane = self.app.query_one(TabbedContent).active_pane.id
+        if active_pane == "initial":
+            return
         conn: Connection = self.get_connection_by_name(active_pane)
         conn.input.clear()
         conn.results.clear()
         conn.results.columns.clear()
-        # input = self.get_current_input()
-        # if input:
-        #     input.text = ""
 
     def action_exec_query(self):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
+        if tabbed_content.active_pane.id == "initial":
+            return
         self.get_connection_by_name(tabbed_content.active_pane.id).exec_query()
 
     def get_current_input(self) -> TextArea | None:
@@ -167,5 +195,5 @@ class GridLayoutExample(App):
 
 
 if __name__ == "__main__":
-    app = GridLayoutExample()
+    app = SiquelClient()
     app.run()

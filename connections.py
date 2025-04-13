@@ -40,6 +40,7 @@ class Connection:
         self.results = DataTable()
         self.conn = DbConnection("test", "", "", SqliteConnector("test"))
         self.connected = False
+        self.env = env
 
     def schemas(self) -> list[str]:
         self.connected = True
@@ -52,13 +53,15 @@ class Connection:
             map(lambda table: table.get_name(), self.conn.connector.tables(schema))
         )
 
-    def columns(self, schema: str, table: str) -> list[(str, str, bool)]:
+    def columns(self, schema: str, table: str) -> list[(str, str, bool, bool, str)]:
         return list(
             map(
                 lambda column: (
                     column.get_name(),
                     column.get_type(),
                     column.is_required(),
+                    column.is_primary_key(),
+                    column.get_default_value(),
                 ),
                 self.conn.connector.columns(schema, table),
             )
@@ -66,6 +69,8 @@ class Connection:
 
     def exec_query(self):
         query: str = self.input.text
+        if len(query) == 0:
+            return
         if query.lower().__contains__("insert ") or query.lower().__contains__(
             "update " or query.lower().__contains__("create ")  # TODO: fix this
         ):
@@ -76,9 +81,12 @@ class Connection:
             self.results.add_rows([(result[0].name, result[1])])
         else:
             results = self.conn.connector.query_with_names(query)
-            logger.info(results[1])
             if len(results) != 0:
                 self.results.clear()
                 self.results.columns.clear()
-                self.results.add_columns(*results[0])
-                self.results.add_rows(results[1:])
+                if len(results) == 1 and results[0][0] == "error":
+                    self.results.add_columns("Status", "msg")
+                    self.results.add_rows([(results[0][0], results[0][1])])
+                else:
+                    self.results.add_columns(*results[0])
+                    self.results.add_rows(results[1:])

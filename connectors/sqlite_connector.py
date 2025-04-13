@@ -1,5 +1,5 @@
 import sqlite3
-from sqlite3 import OperationalError, IntegrityError
+from sqlite3 import OperationalError
 import logging
 from connectors.connector import Connector, Type, ExecutionStatus
 from connectors.dbmodel import Schema, Table, Column
@@ -44,11 +44,13 @@ class SqliteConnector(Connector):
         return tables
 
     def get_columns(self, schema: str, table: str) -> list[Column]:
-        query: str = f"SELECT NAME, TYPE, \"notnull\" FROM PRAGMA_TABLE_INFO('{table}')"
+        query: str = f"SELECT NAME, TYPE, \"notnull\", pk, dflt_value FROM PRAGMA_TABLE_INFO('{
+            table
+        }')"
         columns = list()
         results = self.query(query)
         for val in results:
-            columns.append(Column(val[0], val[1], bool(val[2])))
+            columns.append(Column(val[0], val[1], bool(val[2]), bool(val[3]), val[4]))
         return columns
 
     def execute(self, query: str) -> (ExecutionStatus, str):
@@ -75,14 +77,14 @@ class SqliteConnector(Connector):
         with sqlite3.connect(self.connection_string()) as conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute(query)
                 try:
+                    cursor.execute(query)
                     names = tuple(list(map(lambda x: x[0], cursor.description)))
                 except TypeError:
                     names = tuple([])
                 rows = cursor.fetchall()
                 rows.insert(0, names)
                 return rows
-            except OperationalError as e:
+            except Exception as e:
                 logger.error(f"Error: {repr(e)}")
                 return [("error", repr(e))]

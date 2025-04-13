@@ -6,6 +6,8 @@ class Column:
     name: str
     type: str
     required: bool
+    primary_key: bool
+    default_value: str
 
     def get_name(self) -> str:
         return self.name
@@ -15,6 +17,12 @@ class Column:
 
     def is_required(self) -> bool:
         return self.required
+
+    def is_primary_key(self) -> bool:
+        return self.primary_key
+
+    def get_default_value(self) -> str:
+        return self.default_value
 
     def __repr__(self) -> str:
         return f"{self.name.capitalize()} ({self.type.capitalize()})"
