@@ -2,8 +2,8 @@ import logging
 from textual.widgets import Tab, TextArea, DataTable
 from dataclasses import dataclass
 from enum import Enum
-from connectors.connector import Connector
-from connectors.sqlite_connector import SqliteConnector
+from connectors.connector import Connector, ConnectorType
+from connectors.connector_resolver import resolve_connector
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +18,21 @@ class Env(Enum):
 @dataclass
 class DbConnection:
     database: str
+    host: str
     user: str
     passwd: str
+    connector_type: ConnectorType
     connector: Connector
+
+    def __init__(
+        self, database: str, host: str, user: str, passwd: str, type: ConnectorType
+    ) -> None:
+        self.database = database
+        self.host = host
+        self.user = user
+        self.passwd = passwd
+        self.connector_type = type
+        self.connector = resolve_connector(database, host, user, passwd, type)
 
 
 @dataclass
@@ -33,12 +45,28 @@ class Connection:
     env: Env
     connected: bool = False
 
-    def __init__(self, id: str, env: Env):
+    def __init__(
+        self,
+        id: str,
+        database: str,
+        host: str,
+        user: str,
+        passwd: str,
+        type: ConnectorType,
+        env: Env,
+    ):
+        """Text with color / style.
+
+        Args:
+            text (str, optional): Default unstyled text. Defaults to "".
+            style (Union[str, Style], optional): Base style for text. Defaults to "".
+
+        """
         self.id = id
         self.tab = Tab(id, id=id)
         self.input = TextArea.code_editor("SELECT * FROM Students;", language="sql")
         self.results = DataTable()
-        self.conn = DbConnection("test", "", "", SqliteConnector("test"))
+        self.conn = DbConnection(database, host, user, passwd, ConnectorType.SqLite)
         self.connected = False
         self.env = env
 

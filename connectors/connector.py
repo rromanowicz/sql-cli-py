@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Callable
 
 
-class Type(Enum):
+class ConnectorType(Enum):
     Dummy = 1
     SqLite = 2
 
@@ -17,7 +17,9 @@ class ExecutionStatus(Enum):
 
 @dataclass
 class Connector(ABC):
-    def __init__(self, database: str, host: str, user: str, passw: str, type: Type):
+    def __init__(
+        self, database: str, host: str, user: str, passw: str, type: ConnectorType
+    ):
         self.database = database
         self.host = host
         self.user = user

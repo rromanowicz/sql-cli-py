@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import OperationalError
 import logging
-from connectors.connector import Connector, Type, ExecutionStatus
+from connectors.connector import Connector, ConnectorType, ExecutionStatus
 from connectors.dbmodel import Schema, Table, Column
 
 logger = logging.getLogger(__name__)
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class SqliteConnector(Connector):
     def __init__(self, database):
-        super().__init__(database, None, None, None, Type.SqLite)
+        super().__init__(database, None, None, None, ConnectorType.SqLite)
         with sqlite3.connect(self.connection_string()) as conn:
             conn.cursor()
 

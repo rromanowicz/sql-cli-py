@@ -14,14 +14,15 @@ from textual.widgets import (
 )
 from textual.widgets._tree import TreeNode
 from connections import Connection, Env
+from connectors.connector import ConnectorType
 
 logger = logging.getLogger(__name__)
 
 CONNECTIONS = [
-    Connection("First", Env.DEV),
-    Connection("Second", Env.SIT),
-    Connection("Third", Env.SAT),
-    Connection("Fourth", Env.PROD),
+    Connection("First", "test", None, None, None, ConnectorType.SqLite, Env.DEV),
+    Connection("Second", "test", None, None, None, ConnectorType.SqLite, Env.SIT),
+    Connection("Third", "test", None, None, None, ConnectorType.SqLite, Env.SAT),
+    Connection("Fourth", "test", None, None, None, ConnectorType.SqLite, Env.PROD),
 ]
 
 

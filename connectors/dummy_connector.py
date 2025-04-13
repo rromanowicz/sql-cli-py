@@ -1,4 +1,4 @@
-from connectors.connector import Connector, Type
+from connectors.connector import Connector, ConnectorType
 from connectors.dbmodel import Schema, Table, Column
 
 
@@ -15,8 +15,8 @@ DUMMY_DATA = data = {
 
 
 class DummyConnector(Connector):
-    def __init__(self, database, host, user, passw):
-        super().__init__(database, host, user, passw, Type.Dummy)
+    def __init__(self):
+        super().__init__(None, None, None, None, ConnectorType.Dummy)
 
     def connection_string(self) -> str:
         return f"{self.user}:{self.passw}@{self.host}/{self.database}"
