@@ -28,7 +28,11 @@ CONNECTIONS = [
 
 class SiquelClient(App):
     CSS_PATH = "layout.tcss"
-    BINDINGS = [("c", "clear_input", "Clear"), ("e", "exec_query", "Execute")]
+    BINDINGS = [
+        ("c", "clear_input", "Clear"),
+        ("e", "exec_query", "Execute"),
+        ("r", "refresh_connection", "Refresh"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -66,40 +70,72 @@ class SiquelClient(App):
         if len(event.node.children) == 0:
             label: str = event.node.label.plain
             if label.startswith("["):
+                parent_label = event.node.parent.label.plain
                 conn: Connection = self.get_connection_by_node(event.node)
-                match label[:3]:
+                prefix = label.split(" ")[0]
+                match prefix:
                     case "[S]":
-                        for table_name in conn.tables(self.strip_decorator(label)):
-                            event.node.add(
-                                Text()
-                                .append("[T] ", style="turquoise2")
-                                .append(table_name)
-                            )
-                    case "[T]":
-                        for column_def in conn.columns(
-                            self.strip_decorator(event.node.parent.label.plain),
-                            self.strip_decorator(label),
-                        ):
-                            txt: Text = (
-                                Text()
-                                .append("[C] ", style="turquoise2")
-                                .append(column_def[0])
-                            )
-                            if column_def[2]:
-                                txt.append(" ").append("NULL", style="red s")
-                            if column_def[3]:
-                                txt.append(" ").append("PK", style="red")
-                            column = event.node.add(txt)
-                            column.add_leaf(column_def[1])
+                        event.node.add(
+                            Text().append("[T] ", style="turquoise2").append("Tables")
+                        )
+                        event.node.add(
+                            Text().append("[V] ", style="turquoise2").append("Views")
+                        )
+                        event.node.add(
+                            Text()
+                            .append("[Sq] ", style="turquoise2")
+                            .append("Sequences", style="s")
+                        )
+                    case "[T]" | "[V]":
+                        match prefix:
+                            case "[T]":
+                                type = "table"
+                            case "[V]":
+                                type = "view"
+                        if parent_label[:3] == "[S]":
+                            match type:
+                                case "table":
+                                    objects = conn.tables(
+                                        self.strip_decorator(parent_label)
+                                    )
+                                case "view":
+                                    objects = conn.views(
+                                        self.strip_decorator(parent_label)
+                                    )
+                            for table_name in objects:
+                                event.node.add(
+                                    Text()
+                                    .append(f"{prefix} ", style="turquoise2")
+                                    .append(table_name)
+                                )
+                        else:
+                            for column_def in conn.columns(
+                                self.strip_decorator(
+                                    event.node.parent.parent.label.plain
+                                ),
+                                self.strip_decorator(label),
+                                type,
+                            ):
+                                txt: Text = (
+                                    Text()
+                                    .append("[C] ", style="turquoise2")
+                                    .append(column_def[0])
+                                )
+                                if column_def[2]:
+                                    txt.append(" ").append("NULL", style="red s")
+                                if column_def[3]:
+                                    txt.append(" ").append("PK", style="red")
+                                column = event.node.add(txt)
+                                column.add_leaf(column_def[1])
 
-                            if column_def[2]:
-                                column.add_leaf(
-                                    Text().append("NOT NULL", style="yellow1")
-                                )
-                            if column_def[3]:
-                                column.add_leaf(
-                                    Text().append("PRIMARY KEY", style="yellow1")
-                                )
+                                if column_def[2]:
+                                    column.add_leaf(
+                                        Text().append("NOT NULL", style="yellow1")
+                                    )
+                                if column_def[3]:
+                                    column.add_leaf(
+                                        Text().append("PRIMARY KEY", style="yellow1")
+                                    )
                     case _:
                         if event.node.parent is not None and event.node.parent.is_root:
                             conn: Connection = self.get_connection_by_node(event.node)
@@ -151,22 +187,28 @@ class SiquelClient(App):
 
     def add_connection_tab(self, conn: Connection):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
-        pane = TabPane(conn.id, id=conn.id)
-        input: Horizontal = Horizontal(conn.input, classes="half_height", id="input")
-        input.add_class(conn.env.name.lower())
-        results: Horizontal = Horizontal(
-            conn.results, classes="half_height", id="results"
-        )
-        results.add_class(conn.env.name.lower())
 
-        pane._add_child(
-            Vertical(
-                input,
-                results,
-            ),
-        )
-        tabbed_content.add_pane(pane)
-        tabbed_content.active = pane.id
+        try:
+            tabbed_content.get_widget_by_id(conn.id)
+        except NoMatches:
+            pane = TabPane(conn.id, id=conn.id)
+            input: Horizontal = Horizontal(
+                conn.input, classes="half_height", id="input"
+            )
+            input.add_class(conn.env.name.lower())
+            results: Horizontal = Horizontal(
+                conn.results, classes="half_height", id="results"
+            )
+            results.add_class(conn.env.name.lower())
+
+            pane._add_child(
+                Vertical(
+                    input,
+                    results,
+                ),
+            )
+            tabbed_content.add_pane(pane)
+            tabbed_content.active = pane.id
 
     def on_mount(self) -> None:
         self.title = "Header Application"
@@ -186,6 +228,17 @@ class SiquelClient(App):
         if tabbed_content.active_pane.id == "initial":
             return
         self.get_connection_by_name(tabbed_content.active_pane.id).exec_query()
+
+    def action_refresh_connection(self) -> None:
+        tree: Tree = self.app.query_one(Tree)
+        active_node: TreeNode = tree.cursor_node
+        if active_node is None:
+            return
+        self.get_connection_by_node(active_node).clear()
+        base_node: TreeNode = self.get_base_node(active_node)
+        base_node.remove_children()
+        base_node.collapse()
+        tree.select_node(base_node)
 
     def get_current_input(self) -> TextArea | None:
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)

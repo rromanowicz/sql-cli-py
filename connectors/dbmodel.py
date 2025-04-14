@@ -41,6 +41,7 @@ class Table:
 class Schema:
     name: str
     tables: dict[str, Table]
+    views: dict[str, Table]
 
     def get_name(self) -> str:
         return self.name

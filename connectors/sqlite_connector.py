@@ -22,12 +22,15 @@ class SqliteConnector(Connector):
     def tables_callable(self, schema: str):
         return self.get_tables(schema)
 
+    def views_callable(self, schema: str):
+        return self.get_views(schema)
+
     def columns_callable(self, schema: str, table: str):
         return self.get_columns(schema, table)
 
     def get_schemas(self) -> list[Schema]:
         schemas = list()
-        schemas.append(Schema(self.database, None))
+        schemas.append(Schema(self.database, None, None))
         return schemas
 
     def get_tables(self, schema: str) -> list[Table]:
@@ -35,6 +38,19 @@ class SqliteConnector(Connector):
             SELECT name
             FROM sqlite_master
                 WHERE type='table'
+                AND name NOT LIKE 'sqlite_%';
+        """
+        results = self.query(query)
+        tables = list()
+        for val in results:
+            tables.append(Table(val[0], None))
+        return tables
+
+    def get_views(self, schema: str) -> list[Table]:
+        query: str = """
+            SELECT name
+            FROM sqlite_master
+                WHERE type='view'
                 AND name NOT LIKE 'sqlite_%';
         """
         results = self.query(query)

@@ -55,20 +55,18 @@ class Connection:
         type: ConnectorType,
         env: Env,
     ):
-        """Text with color / style.
-
-        Args:
-            text (str, optional): Default unstyled text. Defaults to "".
-            style (Union[str, Style], optional): Base style for text. Defaults to "".
-
-        """
         self.id = id
         self.tab = Tab(id, id=id)
-        self.input = TextArea.code_editor("SELECT * FROM Students;", language="sql")
+        self.input = TextArea.code_editor(
+            "create view studs as select * from students", language="sql"
+        )
         self.results = DataTable()
         self.conn = DbConnection(database, host, user, passwd, ConnectorType.SqLite)
         self.connected = False
         self.env = env
+
+    def clear(self) -> None:
+        self.conn.connector.clear()
 
     def schemas(self) -> list[str]:
         self.connected = True
@@ -81,7 +79,14 @@ class Connection:
             map(lambda table: table.get_name(), self.conn.connector.tables(schema))
         )
 
-    def columns(self, schema: str, table: str) -> list[(str, str, bool, bool, str)]:
+    def views(self, schema: str) -> list[str]:
+        return list(
+            map(lambda table: table.get_name(), self.conn.connector.views(schema))
+        )
+
+    def columns(
+        self, schema: str, table: str, type: str
+    ) -> list[(str, str, bool, bool, str)]:
         return list(
             map(
                 lambda column: (
@@ -91,7 +96,7 @@ class Connection:
                     column.is_primary_key(),
                     column.get_default_value(),
                 ),
-                self.conn.connector.columns(schema, table),
+                self.conn.connector.columns(schema, table, type),
             )
         )
 
@@ -99,9 +104,12 @@ class Connection:
         query: str = self.input.text
         if len(query) == 0:
             return
-        if query.lower().__contains__("insert ") or query.lower().__contains__(
-            "update " or query.lower().__contains__("create ")  # TODO: fix this
-        ):
+        if (
+            "insert " in query.lower()
+            or "update " in query.lower()
+            or "create " in query.lower()
+            or "drop " in query.lower()
+        ):  # TODO: fix this
             result = self.conn.connector.execute(query)
             self.results.clear()
             self.results.columns.clear()

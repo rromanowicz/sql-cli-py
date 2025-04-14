@@ -44,8 +44,16 @@ class Connector(ABC):
 
     @property
     @abstractmethod
+    def views_callable(self) -> Callable[[str], list[Table]]:
+        pass
+
+    @property
+    @abstractmethod
     def columns_callable(self) -> Callable[[str, str], list[Column]]:
         pass
+
+    def clear(self) -> None:
+        self.schema_dict = dict()
 
     def schemas(self) -> list[Schema]:
         if len(self.schema_dict) == 0:
@@ -66,14 +74,32 @@ class Connector(ABC):
         self.schema_dict[schema] = val
         return list(self.schema_dict.get(schema).tables.values())
 
-    def columns(self, schema: str, table: str) -> list[Column]:
+    def views(self, schema: str) -> list[Table]:
+        self.schemas()
+        val: Schema = self.schema_dict.get(schema.lower())
+        if val.views is None:
+            tmp: dict[str, Table] = dict()
+            for itm in self.views_callable(val.name):
+                tmp[itm.name.lower()] = itm
+            val.views = tmp
+        self.schema_dict[schema] = val
+        return list(self.schema_dict.get(schema).views.values())
+
+    def columns(self, schema: str, table: str, type: str) -> list[Column]:
         self.schemas()
         self.tables(schema)
         sch: Schema = self.schema_dict.get(schema.lower())
-        tbl: Table = sch.tables.get(table.lower())
-        if tbl.columns is None:
-            tbl.columns = self.columns_callable(schema, table)
-        return list(self.schema_dict.get(schema).tables.get(table.lower()).columns)
+        match type:
+            case "table":
+                tbl: Table = sch.tables.get(table.lower())
+                if tbl.columns is None:
+                    tbl.columns = self.columns_callable(schema, table)
+                return list(self.schema_dict.get(schema).tables.get(table.lower()).columns)
+            case "view":
+                tbl: Table = sch.views.get(table.lower())
+                if tbl.columns is None:
+                    tbl.columns = self.columns_callable(schema, table)
+                return list(self.schema_dict.get(schema).views.get(table.lower()).columns)
 
     @abstractmethod
     def execute(self, query: str) -> (ExecutionStatus, str):
