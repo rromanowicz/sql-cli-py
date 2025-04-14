@@ -68,6 +68,9 @@ class Connection:
     def clear(self) -> None:
         self.conn.connector.clear()
 
+    def clear_by_type(self, type: str, schema: str, object: str = None) -> None:
+        self.conn.connector.clear_by_type(type, schema, object)
+
     def schemas(self) -> list[str]:
         self.connected = True
         return list(

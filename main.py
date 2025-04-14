@@ -31,8 +31,14 @@ class SiquelClient(App):
     BINDINGS = [
         ("c", "clear_input", "Clear"),
         ("e", "exec_query", "Execute"),
-        ("r", "refresh_connection", "Refresh"),
+        ("r", "refresh_parent", "Refresh parent"),
+        ("R", "refresh_connection", "Refresh connection"),
     ]
+    SCHEMA = "[S]"
+    TABLE = "[T]"
+    VIEW = "[V]"
+    SEQUENCE = "[Sq]"
+    COLUMN = "[C]"
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -74,7 +80,7 @@ class SiquelClient(App):
                 conn: Connection = self.get_connection_by_node(event.node)
                 prefix = label.split(" ")[0]
                 match prefix:
-                    case "[S]":
+                    case self.SCHEMA:
                         event.node.add(
                             Text().append("[T] ", style="turquoise2").append("Tables")
                         )
@@ -86,11 +92,11 @@ class SiquelClient(App):
                             .append("[Sq] ", style="turquoise2")
                             .append("Sequences", style="s")
                         )
-                    case "[T]" | "[V]":
+                    case self.TABLE | self.VIEW:
                         match prefix:
-                            case "[T]":
+                            case self.TABLE:
                                 type = "table"
-                            case "[V]":
+                            case self.VIEW:
                                 type = "view"
                         if parent_label[:3] == "[S]":
                             match type:
@@ -118,7 +124,7 @@ class SiquelClient(App):
                             ):
                                 txt: Text = (
                                     Text()
-                                    .append("[C] ", style="turquoise2")
+                                    .append(f"{self.COLUMN} ", style="turquoise2")
                                     .append(column_def[0])
                                 )
                                 if column_def[2]:
@@ -143,7 +149,7 @@ class SiquelClient(App):
                             for schema_name in conn.schemas():
                                 txt: Text = (
                                     Text()
-                                    .append("[S] ", style="turquoise2")
+                                    .append(f"{self.SCHEMA} ", style="turquoise2")
                                     .append(schema_name)
                                 )
                                 # event.node.add(f"[S] {schema_name}")
@@ -160,16 +166,24 @@ class SiquelClient(App):
         else:
             return self.get_base_node(parent_node)
 
+    def get_schema_node(self, node: TreeNode) -> TreeNode:
+        if node.is_root:
+            return None
+        else:
+            if node.label.plain.split(" ")[0] == self.SCHEMA:
+                return node
+            else:
+                return self.get_schema_node(node.parent)
+
     def get_connection_by_name(self, name: str) -> Connection:
         for connection in CONNECTIONS:
             if self.strip_decorator(name) == connection.id:
                 return connection
 
     def strip_decorator(self, name: str) -> str:
-        idx: int = name.find("] ")
-        if idx == -1:
+        if name is None or not name.startswith("["):
             return name
-        return name[idx + 2 :]
+        return name.split(" ")[1]
 
     def get_env_color(self, env: Env) -> str:
         match env:
@@ -232,13 +246,67 @@ class SiquelClient(App):
     def action_refresh_connection(self) -> None:
         tree: Tree = self.app.query_one(Tree)
         active_node: TreeNode = tree.cursor_node
-        if active_node is None:
+        if active_node is None or active_node.is_root:  # TODO: add root behaviour
             return
         self.get_connection_by_node(active_node).clear()
         base_node: TreeNode = self.get_base_node(active_node)
         base_node.remove_children()
         base_node.collapse()
         tree.select_node(base_node)
+
+    def action_refresh_parent(self) -> None:
+        tree: Tree = self.app.query_one(Tree)
+        active_node: TreeNode = tree.cursor_node
+        if active_node is None or active_node.is_root:
+            return
+        refresh_data = self.get_refresh_type(active_node)
+        if refresh_data:
+            self.get_connection_by_node(active_node).clear_by_type(
+                refresh_data[0], refresh_data[1], refresh_data[2]
+            )
+            base_node = active_node.parent
+            base_node.remove_children()
+            base_node.collapse()
+            tree.select_node(base_node)
+        else:
+            self.action_refresh_connection()
+
+    def get_refresh_type(self, node: TreeNode) -> (str, str, str):
+        schema_node: TreeNode = self.get_schema_node(node)
+        if not schema_node:
+            return None
+
+        schema: str = schema_node.label.plain
+        type: str = None
+        obj: str = None
+        active_type = node.label.plain.split(" ")
+        parent_type = node.parent.label.plain.split(" ")
+        if len(active_type) == 1 or len(parent_type) == 1:
+            return None
+        else:
+            if active_type[0] == parent_type[0]:
+                match active_type[0]:
+                    case self.TABLE:
+                        type = "tables"
+                    case self.VIEW:
+                        type = "views"
+            else:
+                match parent_type[0]:
+                    case self.SCHEMA:
+                        type = "schema"
+                    case self.TABLE:
+                        type = "table"
+                        obj = node.parent.label.plain
+                    case self.VIEW:
+                        type = "view"
+                        obj = node.parent.label.plain
+                    case self.COLUMN:
+                        parent = self.get_refresh_type(node.parent)
+                        type = parent[0]
+                        obj = parent[2]
+                    case _:
+                        return None
+        return (type, self.strip_decorator(schema), self.strip_decorator(obj))
 
     def get_current_input(self) -> TextArea | None:
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)

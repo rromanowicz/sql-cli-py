@@ -55,6 +55,25 @@ class Connector(ABC):
     def clear(self) -> None:
         self.schema_dict = dict()
 
+    def clear_by_type(self, type: str, schema: str, object: str = None) -> None:
+        match type:
+            case "schema":
+                self.schema_dict[schema] = Schema(schema.lower(), None, None)
+            case "table":
+                self.schema_dict.get(schema.lower()).tables[object.lower()] = Table(
+                    object.lower, None
+                )
+            case "view":
+                self.schema_dict.get(schema.lower()).views[object.lower()] = Table(
+                    object.lower, None
+                )
+            case "schemas":
+                self.clear()
+            case "tables":
+                self.schema_dict.get(schema.lower()).tables = None
+            case "views":
+                self.schema_dict.get(schema.lower()).views = None
+
     def schemas(self) -> list[Schema]:
         if len(self.schema_dict) == 0:
             result: dict[str, Schema] = dict()
@@ -94,12 +113,16 @@ class Connector(ABC):
                 tbl: Table = sch.tables.get(table.lower())
                 if tbl.columns is None:
                     tbl.columns = self.columns_callable(schema, table)
-                return list(self.schema_dict.get(schema).tables.get(table.lower()).columns)
+                return list(
+                    self.schema_dict.get(schema).tables.get(table.lower()).columns
+                )
             case "view":
                 tbl: Table = sch.views.get(table.lower())
                 if tbl.columns is None:
                     tbl.columns = self.columns_callable(schema, table)
-                return list(self.schema_dict.get(schema).views.get(table.lower()).columns)
+                return list(
+                    self.schema_dict.get(schema).views.get(table.lower()).columns
+                )
 
     @abstractmethod
     def execute(self, query: str) -> (ExecutionStatus, str):
