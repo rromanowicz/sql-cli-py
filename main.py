@@ -1,9 +1,12 @@
 import logging
+
 from rich.text import Text
 from textual.app import App, ComposeResult
+from textual.containers import Grid, Horizontal, Vertical
 from textual.dom import NoMatches
-from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen
 from textual.widgets import (
+    Button,
     Footer,
     Header,
     Label,
@@ -13,6 +16,7 @@ from textual.widgets import (
     Tree,
 )
 from textual.widgets._tree import TreeNode
+
 from connections import Connection, Env
 from connectors.connector import ConnectorType
 
@@ -33,6 +37,7 @@ class SiquelClient(App):
         ("e", "exec_query", "Execute"),
         ("r", "refresh_parent", "Refresh parent"),
         ("R", "refresh_connection", "Refresh connection"),
+        ("q", "request_quit", "Quit"),
     ]
     SCHEMA = "[S]"
     TABLE = "[T]"
@@ -314,6 +319,28 @@ class SiquelClient(App):
             return tabbed_content.active_pane.query_one(TextArea)
         except NoMatches:
             return None
+
+    def action_request_quit(self) -> None:
+        """Action to display the quit dialog."""
+        self.push_screen(QuitScreen())
+
+
+class QuitScreen(ModalScreen):
+    """Screen with a dialog to quit."""
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Label("Are you sure you want to quit?", id="question"),
+            Button("Quit", variant="error", id="quit"),
+            Button("Cancel", variant="primary", id="cancel"),
+            id="dialog",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "quit":
+            self.app.exit()
+        else:
+            self.app.pop_screen()
 
 
 if __name__ == "__main__":
