@@ -2,11 +2,9 @@ import logging
 
 from rich.text import Text
 from textual.app import App, ComposeResult
-from textual.containers import Grid, Horizontal, Vertical
+from textual.containers import Horizontal, Vertical
 from textual.dom import NoMatches
-from textual.screen import ModalScreen
 from textual.widgets import (
-    Button,
     Footer,
     Header,
     Label,
@@ -19,6 +17,8 @@ from textual.widgets._tree import TreeNode
 
 from connections import Connection, Env
 from connectors.connector import ConnectorType
+from screens.quit_screen import QuitScreen
+from screens.new_connection import NewConnectionScreen
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class SiquelClient(App):
         ("e", "exec_query", "Execute"),
         ("r", "refresh_parent", "Refresh parent"),
         ("R", "refresh_connection", "Refresh connection"),
+        ("n", "request_new_connection", "New Connection"),
         ("q", "request_quit", "Quit"),
     ]
     SCHEMA = "[S]"
@@ -44,6 +45,8 @@ class SiquelClient(App):
     VIEW = "[V]"
     SEQUENCE = "[Sq]"
     COLUMN = "[C]"
+
+    connections: [Connection] = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -73,6 +76,16 @@ class SiquelClient(App):
             txt.append(connection.id)
             tree.root.add(txt)
         return tree
+
+    def add_connection_node(self, connection: Connection):
+        tree = self.query_one(Tree)
+        txt: Text = Text()
+        txt.append(
+            f"[{connection.env.name.upper()}] ",
+            style=f"bold {self.get_env_color(connection.env)}",
+        )
+        txt.append(connection.id)
+        tree.root.add(txt)
 
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
         self.fill_child_nodes(event)
@@ -181,7 +194,7 @@ class SiquelClient(App):
                 return self.get_schema_node(node.parent)
 
     def get_connection_by_name(self, name: str) -> Connection:
-        for connection in CONNECTIONS:
+        for connection in self.connections:
             if self.strip_decorator(name) == connection.id:
                 return connection
 
@@ -232,6 +245,7 @@ class SiquelClient(App):
     def on_mount(self) -> None:
         self.title = "Header Application"
         self.sub_title = "With title and sub-title"
+        self.connections = CONNECTIONS
 
     def action_clear_input(self) -> None:
         active_pane = self.app.query_one(TabbedContent).active_pane.id
@@ -276,6 +290,18 @@ class SiquelClient(App):
         else:
             self.action_refresh_connection()
 
+    def action_request_quit(self) -> None:
+        self.push_screen(QuitScreen())
+
+    def action_request_new_connection(self) -> None:
+        def result(conn: Connection | None):
+            if conn:
+                self.connections.append(conn)
+                self.add_connection_node(conn)
+                # self.add_connection_tab(conn)
+
+        self.push_screen(NewConnectionScreen(), result)
+
     def get_refresh_type(self, node: TreeNode) -> (str, str, str):
         schema_node: TreeNode = self.get_schema_node(node)
         if not schema_node:
@@ -319,28 +345,6 @@ class SiquelClient(App):
             return tabbed_content.active_pane.query_one(TextArea)
         except NoMatches:
             return None
-
-    def action_request_quit(self) -> None:
-        """Action to display the quit dialog."""
-        self.push_screen(QuitScreen())
-
-
-class QuitScreen(ModalScreen):
-    """Screen with a dialog to quit."""
-
-    def compose(self) -> ComposeResult:
-        yield Grid(
-            Label("Are you sure you want to quit?", id="question"),
-            Button("Quit", variant="error", id="quit"),
-            Button("Cancel", variant="primary", id="cancel"),
-            id="dialog",
-        )
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "quit":
-            self.app.exit()
-        else:
-            self.app.pop_screen()
 
 
 if __name__ == "__main__":

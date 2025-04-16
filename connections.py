@@ -8,11 +8,17 @@ from connectors.connector_resolver import resolve_connector
 logger = logging.getLogger(__name__)
 
 
-class Env(Enum):
-    DEV = 1
-    SIT = 2
-    SAT = 3
-    PROD = 4
+class ExtendedEnum(Enum):
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+
+class Env(ExtendedEnum):
+    DEV = "DEV"
+    SIT = "SIT"
+    SAT = "SAT"
+    PROD = "PROD"
 
 
 @dataclass
