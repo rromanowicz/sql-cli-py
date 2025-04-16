@@ -33,9 +33,9 @@ class NewConnectionScreen(ModalScreen):
                 yield Input(placeholder="Database", id="database")
 
             with Horizontal(classes="container w1"):
-                with Vertical(classes="w5"):
+                with Vertical(classes="w7"):
                     yield Input(placeholder="Host", id="host")
-                with Vertical(classes="w5"):
+                with Vertical(classes="w3"):
                     yield Input(placeholder="Port", id="port")
 
             with Horizontal(classes="container padded"):
