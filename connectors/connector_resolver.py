@@ -7,7 +7,7 @@ def resolve_connector(
     database: str, host: str, user: str, passw: str, type: ConnectorType
 ) -> Connector:
     match type:
-        case ConnectorType.SqLite:
+        case ConnectorType.SQLITE:
             return SqliteConnector(database)
         case _:
             return DummyConnector()

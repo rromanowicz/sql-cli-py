@@ -1,18 +1,7 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from connectors.dbmodel import Schema, Table, Column
-from enum import Enum
+from model import Schema, Table, Column, ConnectorType, ExecutionStatus
 from typing import Callable
-
-
-class ConnectorType(Enum):
-    Dummy = 1
-    SqLite = 2
-
-
-class ExecutionStatus(Enum):
-    Success = 1
-    Failure = 2
 
 
 @dataclass

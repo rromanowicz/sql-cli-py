@@ -1,24 +1,11 @@
 import logging
 from textual.widgets import Tab, TextArea, DataTable
 from dataclasses import dataclass
-from enum import Enum
 from connectors.connector import Connector, ConnectorType
 from connectors.connector_resolver import resolve_connector
+from model import Env
 
 logger = logging.getLogger(__name__)
-
-
-class ExtendedEnum(Enum):
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
-
-
-class Env(ExtendedEnum):
-    DEV = "DEV"
-    SIT = "SIT"
-    SAT = "SAT"
-    PROD = "PROD"
 
 
 @dataclass
@@ -63,11 +50,9 @@ class Connection:
     ):
         self.id = id
         self.tab = Tab(id, id=id)
-        self.input = TextArea.code_editor(
-            "create view studs as select * from students", language="sql"
-        )
+        self.input = TextArea.code_editor("select 1", language="sql")
         self.results = DataTable()
-        self.conn = DbConnection(database, host, user, passwd, ConnectorType.SqLite)
+        self.conn = DbConnection(database, host, user, passwd, ConnectorType.SQLITE)
         self.connected = False
         self.env = env
 

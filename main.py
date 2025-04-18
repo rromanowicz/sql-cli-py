@@ -13,32 +13,34 @@ from textual.widgets import (
     TextArea,
     Tree,
 )
-from textual.widgets._tree import TreeNode
+from textual.reactive import reactive
+from textual.widget import Widget
 
 from connections import Connection, Env
 from connectors.connector import ConnectorType
-from screens.quit_screen import QuitScreen
-from screens.new_connection import NewConnectionScreen
+from components.screens.quit_screen import QuitScreen
+from components.screens.new_connection import NewConnectionScreen
+from components.menu import Menu
 
 logger = logging.getLogger(__name__)
 
 CONNECTIONS = [
-    Connection("First", "test", None, None, None, ConnectorType.SqLite, Env.DEV),
-    Connection("Second", "test", None, None, None, ConnectorType.SqLite, Env.SIT),
-    Connection("Third", "test", None, None, None, ConnectorType.SqLite, Env.SAT),
-    Connection("Fourth", "test", None, None, None, ConnectorType.SqLite, Env.PROD),
+    Connection("First", "test", None, None, None, ConnectorType.SQLITE, Env.DEV),
+    Connection("Second", "test", None, None, None, ConnectorType.SQLITE, Env.SIT),
+    Connection("Third", "test", None, None, None, ConnectorType.SQLITE, Env.SAT),
+    Connection("Fourth", "test", None, None, None, ConnectorType.SQLITE, Env.PROD),
 ]
 
 
 class SiquelClient(App):
     CSS_PATH = "layout.tcss"
     BINDINGS = [
+        ("q", "request_quit", "Quit"),
         ("c", "clear_input", "Clear"),
         ("e", "exec_query", "Execute"),
         ("r", "refresh_parent", "Refresh parent"),
         ("R", "refresh_connection", "Refresh connection"),
         ("n", "request_new_connection", "New Connection"),
-        ("q", "request_quit", "Quit"),
     ]
     SCHEMA = "[S]"
     TABLE = "[T]"
@@ -46,7 +48,27 @@ class SiquelClient(App):
     SEQUENCE = "[Sq]"
     COLUMN = "[C]"
 
-    connections: [Connection] = []
+    active_panel = reactive(Widget, bindings=True)
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if type(self.app.focused) is not Tree:
+            if action in [
+                "refresh_parent",
+                "refresh_connection",
+                "request_new_connection",
+            ]:
+                return False
+        else:
+            if action in ["clear_input", "exec_query"]:
+                return False
+
+        return True
+
+    def __init__(self, connections: [Connection]):
+        super().__init__()
+        self.connections = connections
+
+    menu: Menu
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -54,7 +76,8 @@ class SiquelClient(App):
                 yield Header("Header")
             with Horizontal():
                 with Vertical(classes="box column1"):
-                    yield self.menu()
+                    self.menu = Menu(self.connections)
+                    yield self.menu.tree
                 with TabbedContent(classes="box column4"):
                     with TabPane("Initial", id="initial"):
                         with Vertical():
@@ -63,135 +86,15 @@ class SiquelClient(App):
             with Horizontal(classes="row box"):
                 yield Footer()
 
-    def menu(self) -> Tree[str]:
-        tree: Tree[str] = Tree("Connections")
-        tree.root.expand()
-
-        for connection in CONNECTIONS:
-            txt: Text = Text()
-            txt.append(
-                f"[{connection.env.name.upper()}] ",
-                style=f"bold {self.get_env_color(connection.env)}",
-            )
-            txt.append(connection.id)
-            tree.root.add(txt)
-        return tree
-
-    def add_connection_node(self, connection: Connection):
-        tree = self.query_one(Tree)
-        txt: Text = Text()
-        txt.append(
-            f"[{connection.env.name.upper()}] ",
-            style=f"bold {self.get_env_color(connection.env)}",
-        )
-        txt.append(connection.id)
-        tree.root.add(txt)
-
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
-        self.fill_child_nodes(event)
-
-    def fill_child_nodes(self, event: Tree.NodeExpanded):
-        if len(event.node.children) == 0:
-            label: str = event.node.label.plain
-            if label.startswith("["):
-                parent_label = event.node.parent.label.plain
-                conn: Connection = self.get_connection_by_node(event.node)
-                prefix = label.split(" ")[0]
-                match prefix:
-                    case self.SCHEMA:
-                        event.node.add(
-                            Text().append("[T] ", style="turquoise2").append("Tables")
-                        )
-                        event.node.add(
-                            Text().append("[V] ", style="turquoise2").append("Views")
-                        )
-                        event.node.add(
-                            Text()
-                            .append("[Sq] ", style="turquoise2")
-                            .append("Sequences", style="s")
-                        )
-                    case self.TABLE | self.VIEW:
-                        match prefix:
-                            case self.TABLE:
-                                type = "table"
-                            case self.VIEW:
-                                type = "view"
-                        if parent_label[:3] == "[S]":
-                            match type:
-                                case "table":
-                                    objects = conn.tables(
-                                        self.strip_decorator(parent_label)
-                                    )
-                                case "view":
-                                    objects = conn.views(
-                                        self.strip_decorator(parent_label)
-                                    )
-                            for table_name in objects:
-                                event.node.add(
-                                    Text()
-                                    .append(f"{prefix} ", style="turquoise2")
-                                    .append(table_name)
-                                )
-                        else:
-                            for column_def in conn.columns(
-                                self.strip_decorator(
-                                    event.node.parent.parent.label.plain
-                                ),
-                                self.strip_decorator(label),
-                                type,
-                            ):
-                                txt: Text = (
-                                    Text()
-                                    .append(f"{self.COLUMN} ", style="turquoise2")
-                                    .append(column_def[0])
-                                )
-                                if column_def[2]:
-                                    txt.append(" ").append("NULL", style="red s")
-                                if column_def[3]:
-                                    txt.append(" ").append("PK", style="red")
-                                column = event.node.add(txt)
-                                column.add_leaf(column_def[1])
-
-                                if column_def[2]:
-                                    column.add_leaf(
-                                        Text().append("NOT NULL", style="yellow1")
-                                    )
-                                if column_def[3]:
-                                    column.add_leaf(
-                                        Text().append("PRIMARY KEY", style="yellow1")
-                                    )
-                    case _:
-                        if event.node.parent is not None and event.node.parent.is_root:
-                            conn: Connection = self.get_connection_by_node(event.node)
-                            self.add_connection_tab(conn)
-                            for schema_name in conn.schemas():
-                                txt: Text = (
-                                    Text()
-                                    .append(f"{self.SCHEMA} ", style="turquoise2")
-                                    .append(schema_name)
-                                )
-                                # event.node.add(f"[S] {schema_name}")
-                                event.node.add(txt)
-
-    def get_connection_by_node(self, node: TreeNode) -> Connection:
-        base_name: str = self.get_base_node(node).label.plain
-        return self.get_connection_by_name(base_name)
-
-    def get_base_node(self, node: TreeNode) -> TreeNode:
-        parent_node: TreeNode = node.parent
-        if parent_node.is_root:
-            return node
-        else:
-            return self.get_base_node(parent_node)
-
-    def get_schema_node(self, node: TreeNode) -> TreeNode:
-        if node.is_root:
-            return None
-        else:
-            if node.label.plain.split(" ")[0] == self.SCHEMA:
-                return node
-            else:
-                return self.get_schema_node(node.parent)
+        label: str = event.node.label.plain
+        if label.startswith("["):
+            self.menu.fill_child_nodes(event)
+            conn: Connection = self.menu.get_connection_by_node(event.node)
+            if conn:
+                print(conn)
+                logger.info(conn)
+                self.add_connection_tab(conn)
 
     def get_connection_by_name(self, name: str) -> Connection:
         for connection in self.connections:
@@ -202,17 +105,6 @@ class SiquelClient(App):
         if name is None or not name.startswith("["):
             return name
         return name.split(" ")[1]
-
-    def get_env_color(self, env: Env) -> str:
-        match env:
-            case Env.DEV:
-                return "green"
-            case Env.SIT:
-                return "yellow1"
-            case Env.SAT:
-                return "dark_orange"
-            case Env.PROD:
-                return "red"
 
     def input_area(self) -> TextArea:
         return TextArea.code_editor("SELECT * FROM DUAL;", language="sql")
@@ -245,7 +137,6 @@ class SiquelClient(App):
     def on_mount(self) -> None:
         self.title = "Header Application"
         self.sub_title = "With title and sub-title"
-        self.connections = CONNECTIONS
 
     def action_clear_input(self) -> None:
         active_pane = self.app.query_one(TabbedContent).active_pane.id
@@ -263,32 +154,10 @@ class SiquelClient(App):
         self.get_connection_by_name(tabbed_content.active_pane.id).exec_query()
 
     def action_refresh_connection(self) -> None:
-        tree: Tree = self.app.query_one(Tree)
-        active_node: TreeNode = tree.cursor_node
-        if active_node is None or active_node.is_root:  # TODO: add root behaviour
-            return
-        self.get_connection_by_node(active_node).clear()
-        base_node: TreeNode = self.get_base_node(active_node)
-        base_node.remove_children()
-        base_node.collapse()
-        tree.select_node(base_node)
+        self.menu.refresh_connection()
 
     def action_refresh_parent(self) -> None:
-        tree: Tree = self.app.query_one(Tree)
-        active_node: TreeNode = tree.cursor_node
-        if active_node is None or active_node.is_root:
-            return
-        refresh_data = self.get_refresh_type(active_node)
-        if refresh_data:
-            self.get_connection_by_node(active_node).clear_by_type(
-                refresh_data[0], refresh_data[1], refresh_data[2]
-            )
-            base_node = active_node.parent
-            base_node.remove_children()
-            base_node.collapse()
-            tree.select_node(base_node)
-        else:
-            self.action_refresh_connection()
+        self.menu.refresh_parent()
 
     def action_request_quit(self) -> None:
         self.push_screen(QuitScreen())
@@ -297,47 +166,9 @@ class SiquelClient(App):
         def result(conn: Connection | None):
             if conn:
                 self.connections.append(conn)
-                self.add_connection_node(conn)
-                # self.add_connection_tab(conn)
+                self.menu.add_connection_node(conn)
 
         self.push_screen(NewConnectionScreen(), result)
-
-    def get_refresh_type(self, node: TreeNode) -> (str, str, str):
-        schema_node: TreeNode = self.get_schema_node(node)
-        if not schema_node:
-            return None
-
-        schema: str = schema_node.label.plain
-        type: str = None
-        obj: str = None
-        active_type = node.label.plain.split(" ")
-        parent_type = node.parent.label.plain.split(" ")
-        if len(active_type) == 1 or len(parent_type) == 1:
-            return None
-        else:
-            if active_type[0] == parent_type[0]:
-                match active_type[0]:
-                    case self.TABLE:
-                        type = "tables"
-                    case self.VIEW:
-                        type = "views"
-            else:
-                match parent_type[0]:
-                    case self.SCHEMA:
-                        type = "schema"
-                    case self.TABLE:
-                        type = "table"
-                        obj = node.parent.label.plain
-                    case self.VIEW:
-                        type = "view"
-                        obj = node.parent.label.plain
-                    case self.COLUMN:
-                        parent = self.get_refresh_type(node.parent)
-                        type = parent[0]
-                        obj = parent[2]
-                    case _:
-                        return None
-        return (type, self.strip_decorator(schema), self.strip_decorator(obj))
 
     def get_current_input(self) -> TextArea | None:
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
@@ -348,5 +179,5 @@ class SiquelClient(App):
 
 
 if __name__ == "__main__":
-    app = SiquelClient()
+    app = SiquelClient(CONNECTIONS)
     app.run()

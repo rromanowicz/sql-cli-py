@@ -17,7 +17,7 @@ class NewConnectionScreen(ModalScreen):
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
                     yield Input(placeholder="Name", id="name")
-                with Vertical(classes="w2"):
+                with Vertical(classes="w3"):
                     yield Select(
                         ((line, line) for line in Env.list()),
                         allow_blank=False,
@@ -30,7 +30,14 @@ class NewConnectionScreen(ModalScreen):
                     yield Input(placeholder="Password", id="password")
 
             with Horizontal(classes="container w1"):
-                yield Input(placeholder="Database", id="database")
+                with Vertical(classes="w7"):
+                    yield Input(placeholder="Database", id="database")
+                with Vertical(classes="w3"):
+                    yield Select(
+                        ((line, line) for line in ConnectorType.list()),
+                        allow_blank=False,
+                        id="env",
+                    )
 
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
@@ -62,7 +69,7 @@ class NewConnectionScreen(ModalScreen):
             # port: str = self.query_one("#port").value
 
             conn: Connection = Connection(
-                name, db, host, user, password, ConnectorType.SqLite, Env[env]
+                name, db, host, user, password, ConnectorType.SQLITE, Env[env]
             )
 
             self.dismiss(conn)

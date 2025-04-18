@@ -1,4 +1,28 @@
+from enum import Enum
 from dataclasses import dataclass
+
+
+class ExtendedEnum(Enum):
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+
+class Env(ExtendedEnum):
+    DEV = "DEV"
+    SIT = "SIT"
+    SAT = "SAT"
+    PROD = "PROD"
+
+
+class ConnectorType(ExtendedEnum):
+    SQLITE = "SqLite"
+    DUMMY = "Dummy"
+
+
+class ExecutionStatus(Enum):
+    Success = 1
+    Failure = 2
 
 
 @dataclass
