@@ -36,8 +36,9 @@ class SiquelClient(App):
     CSS_PATH = "layout.tcss"
     BINDINGS = [
         ("q", "request_quit", "Quit"),
-        ("c", "clear_input", "Clear"),
         ("e", "exec_query", "Execute"),
+        ("c", "clear_input", "Clear"),
+        ("f", "format_query", "Format"),
         ("r", "refresh_parent", "Refresh parent"),
         ("R", "refresh_connection", "Refresh connection"),
         ("n", "request_new_connection", "New Connection"),
@@ -146,6 +147,13 @@ class SiquelClient(App):
         conn.input.clear()
         conn.results.clear()
         conn.results.columns.clear()
+
+    def action_format_query(self) -> None:
+        active_pane = self.app.query_one(TabbedContent).active_pane.id
+        if active_pane == "initial":
+            return
+        conn: Connection = self.get_connection_by_name(active_pane)
+        conn.format_query()
 
     def action_exec_query(self):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
