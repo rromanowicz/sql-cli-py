@@ -2,7 +2,7 @@ import sqlite3
 from sqlite3 import OperationalError
 import logging
 from connectors.connector import Connector, ConnectorType, ExecutionStatus
-from model import Schema, Table, Column
+from util.model import Schema, Table, Column
 
 logger = logging.getLogger(__name__)
 

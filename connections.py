@@ -3,7 +3,7 @@ from textual.widgets import Tab, TextArea, DataTable
 from dataclasses import dataclass
 from connectors.connector import Connector, ConnectorType
 from connectors.connector_resolver import resolve_connector
-from model import Env
+from util.model import Env
 import sqlparse
 
 logger = logging.getLogger(__name__)

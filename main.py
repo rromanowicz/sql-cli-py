@@ -1,6 +1,5 @@
 import logging
 
-from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.dom import NoMatches
@@ -21,6 +20,7 @@ from connectors.connector import ConnectorType
 from components.screens.quit_screen import QuitScreen
 from components.screens.new_connection import NewConnectionScreen
 from components.menu import Menu
+import util.bindings as B
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +34,7 @@ CONNECTIONS = [
 
 class SiquelClient(App):
     CSS_PATH = "layout.tcss"
-    BINDINGS = [
-        ("q", "request_quit", "Quit"),
-        ("e", "exec_query", "Execute"),
-        ("c", "clear_input", "Clear"),
-        ("f", "format_query", "Format"),
-        ("r", "refresh_parent", "Refresh parent"),
-        ("R", "refresh_connection", "Refresh connection"),
-        ("n", "request_new_connection", "New Connection"),
-    ]
+    BINDINGS = B.ALL_BINDINGS
     SCHEMA = "[S]"
     TABLE = "[T]"
     VIEW = "[V]"
@@ -53,14 +45,10 @@ class SiquelClient(App):
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if type(self.app.focused) is not Tree:
-            if action in [
-                "refresh_parent",
-                "refresh_connection",
-                "request_new_connection",
-            ]:
+            if action in B.actions(B.CONNECTION_TREE_BINDINGS):
                 return False
         else:
-            if action in ["clear_input", "exec_query"]:
+            if action in B.actions(B.QUERY_BINDINGS):
                 return False
 
         return True

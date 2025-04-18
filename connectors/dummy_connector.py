@@ -1,5 +1,5 @@
 from connectors.connector import Connector, ConnectorType
-from model import Schema, Table, Column
+from util.model import Schema, Table, Column
 
 
 DUMMY_DATA = data = {
