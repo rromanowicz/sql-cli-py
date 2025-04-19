@@ -13,16 +13,18 @@ logger = logging.getLogger(__name__)
 class DbConnection:
     database: str
     host: str
+    port: int
     user: str
     passwd: str
     connector_type: ConnectorType
     connector: Connector
 
     def __init__(
-        self, database: str, host: str, user: str, passwd: str, type: ConnectorType
+        self, database: str, host: str, port: int, user: str, passwd: str, type: ConnectorType
     ) -> None:
         self.database = database
         self.host = host
+        self.port = port
         self.user = user
         self.passwd = passwd
         self.connector_type = type
@@ -44,6 +46,7 @@ class Connection:
         id: str,
         database: str,
         host: str,
+        port: int,
         user: str,
         passwd: str,
         type: ConnectorType,
@@ -53,7 +56,7 @@ class Connection:
         self.tab = Tab(id, id=id)
         self.input = TextArea.code_editor("select 1", language="sql")
         self.results = DataTable()
-        self.conn = DbConnection(database, host, user, passwd, ConnectorType.SQLITE)
+        self.conn = DbConnection(database, host, port, user, passwd, ConnectorType.SQLITE)
         self.connected = False
         self.env = env
 

@@ -25,10 +25,10 @@ import util.bindings as B
 logger = logging.getLogger(__name__)
 
 CONNECTIONS = [
-    Connection("First", "test", None, None, None, ConnectorType.SQLITE, Env.DEV),
-    Connection("Second", "test", None, None, None, ConnectorType.SQLITE, Env.SIT),
-    Connection("Third", "test", None, None, None, ConnectorType.SQLITE, Env.SAT),
-    Connection("Fourth", "test", None, None, None, ConnectorType.SQLITE, Env.PROD),
+    Connection("First", "test", None, None, None, None, ConnectorType.SQLITE, Env.DEV),
+    Connection("Second", "test", None, None, None, None, ConnectorType.SQLITE, Env.SIT),
+    Connection("Third", "test", None, None, None, None, ConnectorType.SQLITE, Env.SAT),
+    Connection("Fourth", "test", None, None, None, None, ConnectorType.SQLITE, Env.PROD),
 ]
 
 

@@ -3,30 +3,37 @@ from sqlite3 import OperationalError
 import logging
 from connectors.connector import Connector, ConnectorType, ExecutionStatus
 from util.model import Schema, Table, Column
+from string import Template
 
 logger = logging.getLogger(__name__)
 
 
 class SqliteConnector(Connector):
+    TABLES_QUERY = """
+        SELECT name
+        FROM sqlite_master
+        WHERE type='table'
+            AND name NOT LIKE 'sqlite_%';
+        """
+    VIEWS_QUERY = """
+        SELECT name
+        FROM sqlite_master
+        WHERE type='view'
+            AND name NOT LIKE 'sqlite_%';
+        """
+
+    COLUMNS_QUERY = Template("""
+        SELECT NAME, TYPE, \"notnull\", pk, dflt_value
+        FROM PRAGMA_TABLE_INFO('$table');
+        """)
+
     def __init__(self, database):
-        super().__init__(database, None, None, None, ConnectorType.SQLITE)
+        super().__init__(database, None, None, None, None, ConnectorType.SQLITE)
         with sqlite3.connect(self.connection_string()) as conn:
             conn.cursor()
 
     def connection_string(self) -> str:
         return f"{self.database}.db"
-
-    def schemas_callable(self):
-        return self.get_schemas()
-
-    def tables_callable(self, schema: str):
-        return self.get_tables(schema)
-
-    def views_callable(self, schema: str):
-        return self.get_views(schema)
-
-    def columns_callable(self, schema: str, table: str):
-        return self.get_columns(schema, table)
 
     def get_schemas(self) -> list[Schema]:
         schemas = list()
@@ -34,35 +41,21 @@ class SqliteConnector(Connector):
         return schemas
 
     def get_tables(self, schema: str) -> list[Table]:
-        query: str = """
-            SELECT name
-            FROM sqlite_master
-                WHERE type='table'
-                AND name NOT LIKE 'sqlite_%';
-        """
-        results = self.query(query)
+        results = self.query(self.TABLES_QUERY)
         tables = list()
         for val in results:
             tables.append(Table(val[0], None))
         return tables
 
     def get_views(self, schema: str) -> list[Table]:
-        query: str = """
-            SELECT name
-            FROM sqlite_master
-                WHERE type='view'
-                AND name NOT LIKE 'sqlite_%';
-        """
-        results = self.query(query)
+        results = self.query(self.VIEWS_QUERY)
         tables = list()
         for val in results:
             tables.append(Table(val[0], None))
         return tables
 
     def get_columns(self, schema: str, table: str) -> list[Column]:
-        query: str = f"SELECT NAME, TYPE, \"notnull\", pk, dflt_value FROM PRAGMA_TABLE_INFO('{
-            table
-        }')"
+        query: str = self.COLUMNS_QUERY.substitute(table=table)
         columns = list()
         results = self.query(query)
         for val in results:

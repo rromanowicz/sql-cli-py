@@ -16,7 +16,7 @@ DUMMY_DATA = data = {
 
 class DummyConnector(Connector):
     def __init__(self):
-        super().__init__(None, None, None, None, ConnectorType.DUMMY)
+        super().__init__(None, None, None, None, None, ConnectorType.DUMMY)
 
     def connection_string(self) -> str:
         return f"{self.user}:{self.passw}@{self.host}/{self.database}"

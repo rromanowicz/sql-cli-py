@@ -7,10 +7,11 @@ from typing import Callable
 @dataclass
 class Connector(ABC):
     def __init__(
-        self, database: str, host: str, user: str, passw: str, type: ConnectorType
+        self, database: str, host: str, port: int, user: str, passw: str, type: ConnectorType
     ):
         self.database = database
         self.host = host
+        self.port = port
         self.user = user
         self.passw = passw
         self.type = type
@@ -23,22 +24,22 @@ class Connector(ABC):
 
     @property
     @abstractmethod
-    def schemas_callable(self) -> Callable[[], list[Schema]]:
+    def get_schemas(self) -> Callable[[], list[Schema]]:
         pass
 
     @property
     @abstractmethod
-    def tables_callable(self) -> Callable[[str], list[Table]]:
+    def get_tables(self) -> Callable[[str], list[Table]]:
         pass
 
     @property
     @abstractmethod
-    def views_callable(self) -> Callable[[str], list[Table]]:
+    def get_views(self) -> Callable[[str], list[Table]]:
         pass
 
     @property
     @abstractmethod
-    def columns_callable(self) -> Callable[[str, str], list[Column]]:
+    def get_columns(self) -> Callable[[str, str], list[Column]]:
         pass
 
     def clear(self) -> None:
@@ -66,7 +67,7 @@ class Connector(ABC):
     def schemas(self) -> list[Schema]:
         if len(self.schema_dict) == 0:
             result: dict[str, Schema] = dict()
-            for itm in self.schemas_callable():
+            for itm in self.get_schemas():
                 result[itm.name.lower()] = itm
             self.schema_dict = result
         return list(self.schema_dict.values())
@@ -76,7 +77,7 @@ class Connector(ABC):
         val: Schema = self.schema_dict.get(schema.lower())
         if val.tables is None:
             tmp: dict[str, Table] = dict()
-            for itm in self.tables_callable(val.name):
+            for itm in self.get_tables(val.name):
                 tmp[itm.name.lower()] = itm
             val.tables = tmp
         self.schema_dict[schema] = val
@@ -87,7 +88,7 @@ class Connector(ABC):
         val: Schema = self.schema_dict.get(schema.lower())
         if val.views is None:
             tmp: dict[str, Table] = dict()
-            for itm in self.views_callable(val.name):
+            for itm in self.get_views(val.name):
                 tmp[itm.name.lower()] = itm
             val.views = tmp
         self.schema_dict[schema] = val
@@ -101,14 +102,14 @@ class Connector(ABC):
             case "table":
                 tbl: Table = sch.tables.get(table.lower())
                 if tbl.columns is None:
-                    tbl.columns = self.columns_callable(schema, table)
+                    tbl.columns = self.get_columns(schema, table)
                 return list(
                     self.schema_dict.get(schema).tables.get(table.lower()).columns
                 )
             case "view":
                 tbl: Table = sch.views.get(table.lower())
                 if tbl.columns is None:
-                    tbl.columns = self.columns_callable(schema, table)
+                    tbl.columns = self.get_columns(schema, table)
                 return list(
                     self.schema_dict.get(schema).views.get(table.lower()).columns
                 )
