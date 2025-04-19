@@ -7,11 +7,14 @@ from connections import Connection, Env
 
 
 class Menu(App):
-    SCHEMA = "[S]"
-    TABLE = "[T]"
-    VIEW = "[V]"
-    SEQUENCE = "[Sq]"
-    COLUMN = "[C]"
+    SCHEMA = "[s]"
+    TABLE = "[t]"
+    VIEW = "[v]"
+    SEQUENCE = "[sq]"
+    COLUMN = "[c]"
+    TABLES = "[T]"
+    VIEWS = "[V]"
+    SEQUENCES = "[SQ]"
     tree: Tree[str] = []
 
     def __init__(self, connections: [Connection]) -> None:
@@ -63,13 +66,15 @@ class Menu(App):
                             .append("[Sq] ", style="turquoise2")
                             .append("Sequences", style="s")
                         )
-                    case self.TABLE | self.VIEW:
+                    case self.TABLE | self.VIEW | self.TABLES | self.VIEWS:
                         match prefix:
-                            case self.TABLE:
+                            case self.TABLE | self.TABLES:
                                 type = "table"
-                            case self.VIEW:
+                                prefix = self.TABLE
+                            case self.VIEW | self.VIEWS:
                                 type = "view"
-                        if parent_label[:3] == "[S]":
+                                prefix = self.VIEW
+                        if parent_label[:3] == self.SCHEMA:
                             match type:
                                 case "table":
                                     objects = conn.tables(
@@ -137,11 +142,11 @@ class Menu(App):
         else:
             return self.get_base_node(parent_node)
 
-    def get_parent_node_by_type(self, node: TreeNode, node_type: str) -> TreeNode:
+    def get_parent_node_by_type(self, node: TreeNode, node_type: [str]) -> TreeNode:
         if node.is_root:
             return None
         else:
-            if node.label.plain.split(" ")[0] == node_type:
+            if node.label.plain.split(" ")[0] in node_type:
                 return node
             else:
                 return self.get_parent_node_by_type(node.parent, node_type)
@@ -233,7 +238,7 @@ class Menu(App):
     def preview_data(self) -> None:
         tree: Tree = self.app.query_one(Tree)
         active_node: TreeNode = tree.cursor_node
-        table_node: TreeNode = self.get_parent_node_by_type(active_node, self.TABLE)
+        table_node: TreeNode = self.get_parent_node_by_type(active_node, [self.TABLE, self.VIEW])
         if table_node:
             table_name = self.strip_decorator(table_node.label.plain)
             schema_name = self.strip_decorator(
