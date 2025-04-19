@@ -42,6 +42,11 @@ class Connector(ABC):
     def get_columns(self) -> Callable[[str, str], list[Column]]:
         pass
 
+    @property
+    @abstractmethod
+    def preview_query(self) -> Callable[[str, str], str]:
+        pass
+
     def clear(self) -> None:
         self.schema_dict = dict()
 

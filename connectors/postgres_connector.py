@@ -24,6 +24,10 @@ class PostgreSqlConnector(Connector):
             AND TABLE_NAME ='$table';
         """)
 
+    PREVIEW_QUERY = Template("""
+        SELECT * FROM $schema.$table LIMIT 10;
+    """)
+
     def __init__(self, database):
         super().__init__(database, None, None, None, ConnectorType.SQLITE)
         # TODO: connect
@@ -61,6 +65,9 @@ class PostgreSqlConnector(Connector):
         for val in results:
             columns.append(Column(val[0], val[1], bool(val[2]), bool(val[3]), val[4]))
         return columns
+
+    def preview_query(self, schema: str, table: str) -> str:
+        return self.PREVIEW_QUERY.substitute(schema=schema, table=table)
 
     def execute(self, query: str) -> (ExecutionStatus, str):
         pass

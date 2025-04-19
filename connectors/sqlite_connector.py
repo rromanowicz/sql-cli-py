@@ -9,23 +9,25 @@ logger = logging.getLogger(__name__)
 
 
 class SqliteConnector(Connector):
-    TABLES_QUERY = """
-        SELECT name
+    TABLES_QUERY = """SELECT name
         FROM sqlite_master
         WHERE type='table'
             AND name NOT LIKE 'sqlite_%';
         """
-    VIEWS_QUERY = """
-        SELECT name
+    VIEWS_QUERY = """SELECT name
         FROM sqlite_master
         WHERE type='view'
             AND name NOT LIKE 'sqlite_%';
         """
 
-    COLUMNS_QUERY = Template("""
-        SELECT NAME, TYPE, \"notnull\", pk, dflt_value
+    COLUMNS_QUERY = Template(
+        """SELECT NAME, TYPE, \"notnull\", pk, dflt_value
         FROM PRAGMA_TABLE_INFO('$table');
-        """)
+        """
+    )
+
+    PREVIEW_QUERY = Template("""SELECT * FROM $table LIMIT 10;
+    """)
 
     def __init__(self, database):
         super().__init__(database, None, None, None, None, ConnectorType.SQLITE)
@@ -61,6 +63,9 @@ class SqliteConnector(Connector):
         for val in results:
             columns.append(Column(val[0], val[1], bool(val[2]), bool(val[3]), val[4]))
         return columns
+
+    def preview_query(self, schema: str, table: str) -> str:
+        return self.PREVIEW_QUERY.substitute(schema=schema, table=table)
 
     def execute(self, query: str) -> (ExecutionStatus, str):
         with sqlite3.connect(self.connection_string()) as conn:

@@ -12,11 +12,6 @@ class Menu(App):
     VIEW = "[V]"
     SEQUENCE = "[Sq]"
     COLUMN = "[C]"
-    BINDINGS = [
-        ("r", "refresh_parent", "Refresh parent"),
-        ("R", "refresh_connection", "Refresh connection"),
-        ("n", "request_new_connection", "New Connection"),
-    ]
     tree: Tree[str] = []
 
     def __init__(self, connections: [Connection]) -> None:
@@ -142,6 +137,15 @@ class Menu(App):
         else:
             return self.get_base_node(parent_node)
 
+    def get_parent_node_by_type(self, node: TreeNode, node_type: str) -> TreeNode:
+        if node.is_root:
+            return None
+        else:
+            if node.label.plain.split(" ")[0] == node_type:
+                return node
+            else:
+                return self.get_parent_node_by_type(node.parent, node_type)
+
     def get_schema_node(self, node: TreeNode) -> TreeNode:
         if node.is_root:
             return None
@@ -225,6 +229,19 @@ class Menu(App):
             tree.select_node(base_node)
         else:
             self.refresh_connection()
+
+    def preview_data(self) -> None:
+        tree: Tree = self.app.query_one(Tree)
+        active_node: TreeNode = tree.cursor_node
+        table_node: TreeNode = self.get_parent_node_by_type(active_node, self.TABLE)
+        if table_node:
+            table_name = self.strip_decorator(table_node.label.plain)
+            schema_name = self.strip_decorator(
+                self.get_schema_node(table_node).label.plain
+            )
+            self.get_connection_by_node(table_node).exec_preview(
+                schema_name, table_name
+            )
 
     def add_connection_node(self, connection: Connection):
         txt: Text = Text()

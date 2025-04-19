@@ -7,6 +7,7 @@ CLEAR_INPUT = ("c", "clear_input", "Clear")
 FORMAT_QUERY = ("f", "format_query", "Format")
 
 # Connection Tree
+PREVIEW_DATA = ("p", "preview_data", "Preview")
 REFRESH_NODE = ("r", "refresh_parent", "Refresh node")
 REFRESH_CONNECTION = ("R", "refresh_connection", "Refresh connection")
 NEW_CONNECTION = ("n", "request_new_connection", "New Connection")
@@ -16,7 +17,7 @@ GLOBAL_BINDINGS = [QUIT]
 
 QUERY_BINDINGS = [EXECUTE_QUERY, CLEAR_INPUT, FORMAT_QUERY]
 
-CONNECTION_TREE_BINDINGS = [REFRESH_NODE, REFRESH_CONNECTION, NEW_CONNECTION]
+CONNECTION_TREE_BINDINGS = [PREVIEW_DATA, REFRESH_NODE, REFRESH_CONNECTION, NEW_CONNECTION]
 
 # Collected
 ALL_BINDINGS = GLOBAL_BINDINGS + QUERY_BINDINGS + CONNECTION_TREE_BINDINGS

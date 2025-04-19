@@ -1,3 +1,4 @@
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.containers import Horizontal, Vertical
@@ -10,9 +11,7 @@ class NewConnectionScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with Vertical(classes="dialog new_conn container"):
             with Horizontal(classes="container w1"):
-                yield Label(
-                    "Add new connection",
-                )
+                yield Label("Add new connection", id="header")
 
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
@@ -36,7 +35,7 @@ class NewConnectionScreen(ModalScreen):
                     yield Select(
                         ((line, line) for line in ConnectorType.list()),
                         allow_blank=False,
-                        id="env",
+                        id="connectionType",
                     )
 
             with Horizontal(classes="container w1"):
@@ -66,12 +65,23 @@ class NewConnectionScreen(ModalScreen):
             user: str = self.query_one("#user").value
             password: str = self.query_one("#password").value
             host: str = self.query_one("#host").value
-            # port: str = self.query_one("#port").value
+            port: str = self.query_one("#port").value
+            connectionType: str = self.query_one("#connectionType").value
 
-            conn: Connection = Connection(
-                name, db, host, user, password, ConnectorType.SQLITE, Env[env]
-            )
+            try:
+                conn: Connection = Connection(
+                    name,
+                    db,
+                    host,
+                    port,
+                    user,
+                    password,
+                    ConnectorType[connectionType.upper()],
+                    Env[env],
+                )
 
-            self.dismiss(conn)
+                self.dismiss(conn)
+            except Exception as e:
+                self.app.action_notify(f"{e}", title=f"{e.__class__.__name__}", severity="error")
         else:
             self.app.pop_screen()

@@ -149,6 +149,9 @@ class SiquelClient(App):
             return
         self.get_connection_by_name(tabbed_content.active_pane.id).exec_query()
 
+    def action_preview_data(self) -> None:
+        self.menu.preview_data()
+
     def action_refresh_connection(self) -> None:
         self.menu.refresh_connection()
 

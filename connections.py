@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from connectors.connector import Connector, ConnectorType
 from connectors.connector_resolver import resolve_connector
 from util.model import Env
+from connectors.exceptions import NewConnectionError
 import sqlparse
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ class DbConnection:
         self.user = user
         self.passwd = passwd
         self.connector_type = type
-        self.connector = resolve_connector(database, host, user, passwd, type)
+        self.connector = resolve_connector(database, host, port, user, passwd, type)
 
 
 @dataclass
@@ -52,6 +53,9 @@ class Connection:
         type: ConnectorType,
         env: Env,
     ):
+        if id is None or len(id) == 0:
+            raise NewConnectionError("\n'Name' field is required")
+
         self.id = id
         self.tab = Tab(id, id=id)
         self.input = TextArea.code_editor("select 1", language="sql")
@@ -134,6 +138,12 @@ class Connection:
                     ("QueryType", f"{parsed[0].get_type()}"),
                 ]
             )
+
+    def exec_preview(self, schema: str, table: str) -> None:
+        self.clear()
+        self.input.text = self.conn.connector.preview_query(schema, table)
+        self.format_query()
+        self.exec_query()
 
     def format_query(self) -> None:
         query: str = self.input.text
