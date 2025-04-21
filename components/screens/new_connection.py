@@ -1,10 +1,10 @@
-from rich.text import Text
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Label, Input, Select
 from connections import Connection, Env
 from connectors.connector import ConnectorType
+from connectors.exceptions import NewConnectionError
 
 
 class NewConnectionScreen(ModalScreen):
@@ -26,7 +26,7 @@ class NewConnectionScreen(ModalScreen):
                 with Vertical(classes="w5"):
                     yield Input(placeholder="User", id="user")
                 with Vertical(classes="w5"):
-                    yield Input(placeholder="Password", id="password")
+                    yield Input(placeholder="Password", id="password", password=True)
 
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
@@ -79,9 +79,12 @@ class NewConnectionScreen(ModalScreen):
                     ConnectorType[connectionType.upper()],
                     Env[env],
                 )
+                conn.test()
 
                 self.dismiss(conn)
-            except Exception as e:
-                self.app.action_notify(f"{e}", title=f"{e.__class__.__name__}", severity="error")
+            except NewConnectionError as e:
+                self.app.action_notify(
+                    f"{e}", title=f"{e.__class__.__name__}", severity="error"
+                )
         else:
             self.app.pop_screen()

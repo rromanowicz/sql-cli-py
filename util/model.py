@@ -17,6 +17,7 @@ class Env(ExtendedEnum):
 
 class ConnectorType(ExtendedEnum):
     SQLITE = "SqLite"
+    POSTGRESQL = "PostgreSQL"
     DUMMY = "Dummy"
 
 

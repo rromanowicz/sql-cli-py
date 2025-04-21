@@ -1,6 +1,12 @@
 from connectors.connector import Connector, ConnectorType, ExecutionStatus
 from util.model import Schema, Table, Column
 from string import Template
+from connectors.exceptions import NewConnectionError
+import logging
+import psycopg
+
+
+logger = logging.getLogger(__name__)
 
 
 class PostgreSqlConnector(Connector):
@@ -24,16 +30,21 @@ class PostgreSqlConnector(Connector):
             AND TABLE_NAME ='$table';
         """)
 
-    PREVIEW_QUERY = Template("""
-        SELECT * FROM $schema.$table LIMIT 10;
+    PREVIEW_QUERY = Template("""SELECT * FROM $schema.$table LIMIT 10;
     """)
 
-    def __init__(self, database):
-        super().__init__(database, None, None, None, ConnectorType.SQLITE)
-        # TODO: connect
+    def __init__(self, database: str, host: str, port: int, user: str, passw: str):
+        super().__init__(database, host, port, user, passw, ConnectorType.POSTGRESQL)
+
+    def test(self) -> None:
+        try:
+            with psycopg.connect(self.connection_string()) as conn:
+                conn.cursor()
+        except Exception as e:
+            raise NewConnectionError(e.__str__())
 
     def connection_string(self) -> str:
-        return f"postgresql://{self.user}:{self.passw}@{self.host}:{self.port}/{self.database}"
+        return f"dbname={self.database} host={self.host} port={self.port} user={self.user} password={self.passw}"
 
     def get_schemas(self) -> list[Schema]:
         results = self.query(self.SCHEMAS_QUERY)
@@ -52,6 +63,7 @@ class PostgreSqlConnector(Connector):
 
     def get_views(self, schema: str) -> list[Table]:
         query: str = self.VIEWS_QUERY.substitute(schema=schema)
+        logger.info(query)
         results = self.query(query)
         tables = list()
         for val in results:
@@ -70,10 +82,34 @@ class PostgreSqlConnector(Connector):
         return self.PREVIEW_QUERY.substitute(schema=schema, table=table)
 
     def execute(self, query: str) -> (ExecutionStatus, str):
-        pass
+        with psycopg.connect(self.connection_string()) as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute(query)
+                    return (ExecutionStatus.Success, None)
+                except Exception as e:
+                    logger.error(f"Error: {repr(e)}")
+                    return (ExecutionStatus.Failure, repr(e))
 
     def query(self, query: str) -> [()]:
-        pass
+        with psycopg.connect(self.connection_string()) as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute(query)
+                    return cur.fetchall()
+                except Exception as e:
+                    logger.error(f"Error: {repr(e)}")
+                    return [("error", repr(e))]
 
     def query_with_names(self, query: str) -> [()]:
-        pass
+        with psycopg.connect(self.connection_string()) as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute(query)
+                    names = tuple(list(map(lambda x: x[0], cur.description)))
+                    rows = cur.fetchall()
+                    rows.insert(0, names)
+                    return rows
+                except Exception as e:
+                    logger.error(f"Error: {repr(e)}")
+                    return [("error", repr(e))]

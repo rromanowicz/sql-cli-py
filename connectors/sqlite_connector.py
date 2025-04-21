@@ -31,6 +31,8 @@ class SqliteConnector(Connector):
 
     def __init__(self, database):
         super().__init__(database, None, None, None, None, ConnectorType.SQLITE)
+
+    def test(self) -> None:
         with sqlite3.connect(self.connection_string()) as conn:
             conn.cursor()
 

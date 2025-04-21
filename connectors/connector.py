@@ -47,6 +47,11 @@ class Connector(ABC):
     def preview_query(self) -> Callable[[str, str], str]:
         pass
 
+    @property
+    @abstractmethod
+    def test(self) -> None:
+        pass
+
     def clear(self) -> None:
         self.schema_dict = dict()
 

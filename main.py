@@ -1,5 +1,6 @@
 import logging
 
+import json
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.dom import NoMatches
@@ -15,21 +16,13 @@ from textual.widgets import (
 from textual.reactive import reactive
 from textual.widget import Widget
 
-from connections import Connection, Env
-from connectors.connector import ConnectorType
+from connections import Connection
 from components.screens.quit_screen import QuitScreen
 from components.screens.new_connection import NewConnectionScreen
 from components.menu import Menu
 import util.bindings as B
 
 logger = logging.getLogger(__name__)
-
-CONNECTIONS = [
-    Connection("First", "test", None, None, None, None, ConnectorType.SQLITE, Env.DEV),
-    Connection("Second", "test", None, None, None, None, ConnectorType.SQLITE, Env.SIT),
-    Connection("Third", "test", None, None, None, None, ConnectorType.SQLITE, Env.SAT),
-    Connection("Fourth", "test", None, None, None, None, ConnectorType.SQLITE, Env.PROD),
-]
 
 
 class SiquelClient(App):
@@ -53,9 +46,9 @@ class SiquelClient(App):
 
         return True
 
-    def __init__(self, connections: [Connection]):
+    def __init__(self):
         super().__init__()
-        self.connections = connections
+        self.connections = self.read_conn_file()
 
     menu: Menu
 
@@ -176,7 +169,12 @@ class SiquelClient(App):
         except NoMatches:
             return None
 
+    def read_conn_file(self) -> [Connection]:
+        with open("conn.json", "r") as file:
+            data = json.load(file)
+            return list(map(lambda itm: Connection.from_dict(itm), data))
+
 
 if __name__ == "__main__":
-    app = SiquelClient(CONNECTIONS)
+    app = SiquelClient()
     app.run()
