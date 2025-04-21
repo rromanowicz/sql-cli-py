@@ -71,12 +71,18 @@ class SiquelClient(App):
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
         label: str = event.node.label.plain
         if label.startswith("["):
-            self.menu.fill_child_nodes(event)
-            conn: Connection = self.menu.get_connection_by_node(event.node)
-            if conn:
-                print(conn)
-                logger.info(conn)
-                self.add_connection_tab(conn)
+            try:
+                self.menu.fill_child_nodes(event)
+                conn: Connection = self.menu.get_connection_by_node(event.node)
+                if conn:
+                    print(conn)
+                    logger.info(conn)
+                    self.add_connection_tab(conn)
+            except Exception as e:
+                self.app.action_notify(
+                    f"{e}", title=f"{e.__class__.__name__}", severity="error"
+                )
+                event.node.collapse()
 
     def get_connection_by_name(self, name: str) -> Connection:
         for connection in self.connections:
