@@ -59,21 +59,22 @@ class NewConnectionScreen(ModalScreen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "confirm":
-            name: str = self.query_one("#name").value
-            env: str = self.query_one("#env").value
-            db: str = self.query_one("#database").value
-            user: str = self.query_one("#user").value
-            password: str = self.query_one("#password").value
-            host: str = self.query_one("#host").value
-            port: str = self.query_one("#port").value
+            name: str = none_if_empty(self.query_one("#name").value)
+            env: str = none_if_empty(self.query_one("#env").value)
+            db: str = none_if_empty(self.query_one("#database").value)
+            user: str = none_if_empty(self.query_one("#user").value)
+            password: str = none_if_empty(self.query_one("#password").value)
+            host: str = none_if_empty(self.query_one("#host").value)
+            port: str = none_if_empty(self.query_one("#port").value)
             connectionType: str = self.query_one("#connectionType").value
+            port_int = None if port is None or len(port) == 0 else int(port)
 
             try:
                 conn: Connection = Connection(
                     name,
                     db,
                     host,
-                    port,
+                    port_int,
                     user,
                     password,
                     ConnectorType[connectionType.upper()],
@@ -88,3 +89,9 @@ class NewConnectionScreen(ModalScreen):
                 )
         else:
             self.app.pop_screen()
+
+def none_if_empty(input: str) -> str | None:
+    if input is None or len(input) == 0:
+        return None
+    else:
+        return input

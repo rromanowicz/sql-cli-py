@@ -1,6 +1,4 @@
 import logging
-
-import json
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.dom import NoMatches
@@ -21,6 +19,7 @@ from components.screens.quit_screen import QuitScreen
 from components.screens.new_connection import NewConnectionScreen
 from components.menu import Menu
 import util.bindings as B
+import util.conn_file as F
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ class SiquelClient(App):
 
     def __init__(self):
         super().__init__()
-        self.connections = self.read_conn_file()
+        self.connections = F.read_conn_file()
 
     menu: Menu
 
@@ -168,6 +167,10 @@ class SiquelClient(App):
 
         self.push_screen(NewConnectionScreen(), result)
 
+    def action_save_connections(self) -> None:
+        F.write_conn_file(self.connections)
+        self.app.action_notify(f"Saved {len(self.connections)} connections", "Saved")
+
     def get_current_input(self) -> TextArea | None:
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
         try:
@@ -175,10 +178,22 @@ class SiquelClient(App):
         except NoMatches:
             return None
 
-    def read_conn_file(self) -> [Connection]:
-        with open("conn.json", "r") as file:
-            data = json.load(file)
-            return list(map(lambda itm: Connection.from_dict(itm), data))
+    # def read_conn_file(self) -> [Connection]:
+    #     if os.path.isfile("conn.json"):
+    #         with open("conn.json", "r") as file:
+    #             data = json.load(file)
+    #             return list(map(lambda itm: Connection.from_dict(itm), data))
+    #     else:
+    #         with open("conn.json", "w") as file:
+    #             file.write("[]")
+    #         return []
+    #
+    # def write_conn_file(self, connections: [Connection]) -> None:
+    #     with open("conn.json", "w") as file:
+    #         file.write(json.dumps(self.connections, cls=ConnectionEncoder))
+    #         self.app.action_notify(
+    #             f"Saved {len(self.connections)} connections", "Saved"
+    #         )
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from util.model import Env
 from connectors.exceptions import NewConnectionError
 import sqlparse
 import json
+from json import JSONEncoder
 from types import SimpleNamespace
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class Conn:
         id: str = str(input.get("id"))
         database: str = str(input.get("database"))
         host: str = str(input.get("host"))
-        port: int = None if input.get("port") is None else int(str(input.get("port")))
+        port: int = 0 if input.get("port") is None else int(str(input.get("port")))
         user: str = str(input.get("user"))
         passwd: str = str(input.get("passwd"))
         connectionType: str = str(input.get("type")).upper()
@@ -106,7 +107,7 @@ class Connection:
         self.input = TextArea.code_editor("select 1", language="sql")
         self.results = DataTable()
         self.conn = DbConnection(
-            database, host, port, user, passwd, type
+            database, host, 0 if port is None else port, user, passwd, type
         )
         self.connected = False
         self.env = env
@@ -116,7 +117,7 @@ class Connection:
         id: str = str(input.get("id"))
         database: str = str(input.get("database"))
         host: str = str(input.get("host"))
-        port: int = None if input.get("port") is None else int(str(input.get("port")))
+        port: int = 0 if input.get("port") is None else int(str(input.get("port")))
         user: str = str(input.get("user"))
         passwd: str = str(input.get("password"))
         connectionType: str = str(input.get("type")).upper()
@@ -220,3 +221,17 @@ class Connection:
         query: str = self.input.text
         formatted = sqlparse.format(query, reindent=True, keyword_case="upper")
         self.input.text = formatted
+
+
+class ConnectionEncoder(JSONEncoder):
+    def default(self, obj: Connection):
+        return {
+            "id": obj.id,
+            "database": obj.conn.database,
+            "host": obj.conn.host,
+            "port": obj.conn.port,
+            "user": obj.conn.user,
+            "passwd": obj.conn.passwd,
+            "type": obj.conn.connector_type.name,
+            "env": obj.env.name,
+        }
