@@ -6,9 +6,8 @@ from connectors.connector_resolver import resolve_connector
 from util.model import Env
 from connectors.exceptions import NewConnectionError
 import sqlparse
-import json
+import util.crypto as C
 from json import JSONEncoder
-from types import SimpleNamespace
 
 logger = logging.getLogger(__name__)
 
@@ -39,43 +38,6 @@ class DbConnection:
         self.passwd = passwd
         self.connector_type = type
         self.connector = resolve_connector(database, host, port, user, passwd, type)
-
-
-@dataclass
-class Conn:
-    id: str
-    database: str
-    host: str
-    port: int
-    user: str
-    passwd: str
-    type: ConnectorType
-    env: Env
-
-    @classmethod
-    def from_json(self, input):
-        self.__dict__ = json.loads(input, object_hook=lambda d: SimpleNamespace(**d))
-
-    @classmethod
-    def from_dict(self, input):
-        id: str = str(input.get("id"))
-        database: str = str(input.get("database"))
-        host: str = str(input.get("host"))
-        port: int = 0 if input.get("port") is None else int(str(input.get("port")))
-        user: str = str(input.get("user"))
-        passwd: str = str(input.get("passwd"))
-        connectionType: str = str(input.get("type")).upper()
-        env: str = str(input.get("env"))
-        return Conn(
-            id,
-            database,
-            host,
-            port,
-            user,
-            passwd,
-            ConnectorType[connectionType],
-            Env[env],
-        )
 
 
 @dataclass
@@ -114,12 +76,12 @@ class Connection:
 
     @classmethod
     def from_dict(self, input: str):
-        id: str = str(input.get("id"))
-        database: str = str(input.get("database"))
-        host: str = str(input.get("host"))
-        port: int = 0 if input.get("port") is None else int(str(input.get("port")))
-        user: str = str(input.get("user"))
-        passwd: str = str(input.get("password"))
+        id: str = input.get("id")
+        database: str = C.decrypt(input.get("database"))
+        host: str = C.decrypt(input.get("host"))
+        port: int = 0 if input.get("port") is None else input.get("port")
+        user: str = C.decrypt(input.get("user"))
+        passwd: str = C.decrypt(input.get("password"))
         connectionType: str = str(input.get("type")).upper()
         env: str = str(input.get("env"))
         return self(
@@ -221,6 +183,12 @@ class Connection:
         query: str = self.input.text
         formatted = sqlparse.format(query, reindent=True, keyword_case="upper")
         self.input.text = formatted
+
+    def encrypt(self) -> None:
+        self.conn.database = C.encrypt(self.conn.database)
+        self.conn.host = C.encrypt(self.conn.host)
+        self.conn.user = C.encrypt(self.conn.user)
+        self.conn.passwd = C.encrypt(self.conn.passwd)
 
 
 class ConnectionEncoder(JSONEncoder):

@@ -1,4 +1,5 @@
 import logging
+from cryptography.fernet import InvalidToken
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.dom import NoMatches
@@ -20,6 +21,7 @@ from components.screens.new_connection import NewConnectionScreen
 from components.menu import Menu
 import util.bindings as B
 import util.conn_file as F
+from util.crypto import load_env
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,10 @@ class SiquelClient(App):
 
     def __init__(self):
         super().__init__()
-        self.connections = F.read_conn_file()
+        try:
+            self.connections = F.read_conn_file()
+        except InvalidToken:
+            self.connections = []
 
     menu: Menu
 
@@ -178,24 +183,8 @@ class SiquelClient(App):
         except NoMatches:
             return None
 
-    # def read_conn_file(self) -> [Connection]:
-    #     if os.path.isfile("conn.json"):
-    #         with open("conn.json", "r") as file:
-    #             data = json.load(file)
-    #             return list(map(lambda itm: Connection.from_dict(itm), data))
-    #     else:
-    #         with open("conn.json", "w") as file:
-    #             file.write("[]")
-    #         return []
-    #
-    # def write_conn_file(self, connections: [Connection]) -> None:
-    #     with open("conn.json", "w") as file:
-    #         file.write(json.dumps(self.connections, cls=ConnectionEncoder))
-    #         self.app.action_notify(
-    #             f"Saved {len(self.connections)} connections", "Saved"
-    #         )
-
 
 if __name__ == "__main__":
+    load_env()
     app = SiquelClient()
     app.run()
