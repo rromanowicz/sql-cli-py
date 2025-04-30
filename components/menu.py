@@ -1,9 +1,10 @@
 from rich.text import Text
 from textual.app import App
 from textual.widgets import Tree
-
 from textual.widgets._tree import TreeNode
-from connections import Connection, Env
+
+from connection.connection import Connection
+from util.model import Env
 
 
 class Menu(App):
@@ -26,8 +27,8 @@ class Menu(App):
         for connection in connections:
             txt: Text = Text()
             txt.append(
-                f"[{connection.env.name.upper()}] ",
-                style=f"bold {self.get_env_color(connection.env)}",
+                f"[{connection.conn.env.name.upper()}] ",
+                style=f"bold {self.get_env_color(connection.conn.env)}",
             )
             txt.append(connection.id)
             self.tree.root.add(txt)
@@ -238,7 +239,9 @@ class Menu(App):
     def preview_data(self) -> None:
         tree: Tree = self.app.query_one(Tree)
         active_node: TreeNode = tree.cursor_node
-        table_node: TreeNode = self.get_parent_node_by_type(active_node, [self.TABLE, self.VIEW])
+        table_node: TreeNode = self.get_parent_node_by_type(
+            active_node, [self.TABLE, self.VIEW]
+        )
         if table_node:
             table_name = self.strip_decorator(table_node.label.plain)
             schema_name = self.strip_decorator(
@@ -251,8 +254,8 @@ class Menu(App):
     def add_connection_node(self, connection: Connection):
         txt: Text = Text()
         txt.append(
-            f"[{connection.env.name.upper()}] ",
-            style=f"bold {self.get_env_color(connection.env)}",
+            f"[{connection.conn.env.name.upper()}] ",
+            style=f"bold {self.get_env_color(connection.conn.env)}",
         )
         txt.append(connection.id)
         self.tree.root.add(txt)

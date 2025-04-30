@@ -1,8 +1,11 @@
 import logging
+
 from cryptography.fernet import InvalidToken
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.dom import NoMatches
+from textual.reactive import reactive
+from textual.widget import Widget
 from textual.widgets import (
     Footer,
     Header,
@@ -12,15 +15,13 @@ from textual.widgets import (
     TextArea,
     Tree,
 )
-from textual.reactive import reactive
-from textual.widget import Widget
 
-from connections import Connection
-from components.screens.quit_screen import QuitScreen
-from components.screens.new_connection import NewConnectionScreen
-from components.menu import Menu
 import util.bindings as B
 import util.conn_file as F
+from components.menu import Menu
+from components.screens.new_connection import NewConnectionScreen
+from components.screens.quit_screen import QuitScreen
+from connection.connection import Connection
 from util.crypto import load_env
 
 logger = logging.getLogger(__name__)
@@ -101,21 +102,21 @@ class SiquelClient(App):
     def input_area(self) -> TextArea:
         return TextArea.code_editor("SELECT * FROM DUAL;", language="sql")
 
-    def add_connection_tab(self, conn: Connection):
+    def add_connection_tab(self, connection: Connection):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
 
         try:
-            tabbed_content.get_widget_by_id(conn.id)
+            tabbed_content.get_widget_by_id(connection.id)
         except NoMatches:
-            pane = TabPane(conn.id, id=conn.id)
+            pane = TabPane(connection.id, id=connection.id)
             input: Horizontal = Horizontal(
-                conn.input, classes="half_height", id="input"
+                connection.input, classes="half_height", id="input"
             )
-            input.add_class(conn.env.name.lower())
+            input.add_class(connection.conn.env.name.lower())
             results: Horizontal = Horizontal(
-                conn.results, classes="half_height", id="results"
+                connection.results, classes="half_height", id="results"
             )
-            results.add_class(conn.env.name.lower())
+            results.add_class(connection.conn.env.name.lower())
 
             pane._add_child(
                 Vertical(

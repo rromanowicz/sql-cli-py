@@ -1,0 +1,26 @@
+[project]
+name = "SQL Cli"
+version = "0.0.1"
+authors = [
+  { name="rromanowicz" },
+]
+description = "Simple terminal SQL client"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+ "textual",
+ "textual[syntax]",
+ "sqlparse",
+ "python-dotenv",
+ "psycopg",
+ "psycopg_binary",
+]
+
+[project.urls]
+Homepage = "https://github.com/rromanowicz/sql-cli-py"
+Issues = "https://github.com/rromanowicz/sql-cli-py/issues"

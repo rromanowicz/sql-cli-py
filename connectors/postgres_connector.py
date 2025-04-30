@@ -1,10 +1,11 @@
-from connectors.connector import Connector, ConnectorType, ExecutionStatus
-from util.model import Schema, Table, Column
-from string import Template
-from connectors.exceptions import NewConnectionError
 import logging
+from string import Template
+
 import psycopg
 
+from connectors.connector import Connector, ConnectorType, ExecutionStatus
+from connectors.exceptions import NewConnectionError
+from util.model import Column, Schema, Table
 
 logger = logging.getLogger(__name__)
 

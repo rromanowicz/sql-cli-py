@@ -1,7 +1,8 @@
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from util.model import Schema, Table, Column, ConnectorType, ExecutionStatus
+from dataclasses import dataclass
 from typing import Callable
+
+from util.model import Column, ConnectorType, ExecutionStatus, Schema, Table
 
 
 @dataclass

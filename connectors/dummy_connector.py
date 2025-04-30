@@ -1,6 +1,5 @@
 from connectors.connector import Connector, ConnectorType
-from util.model import Schema, Table, Column
-
+from util.model import Column, Schema, Table
 
 DUMMY_DATA = data = {
     "public": {

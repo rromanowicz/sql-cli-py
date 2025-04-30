@@ -1,5 +1,6 @@
-from cryptography.fernet import Fernet
 import os.path
+
+from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
 F_KEY: str = "F_KEY"

@@ -1,10 +1,13 @@
 from textual.app import ComposeResult
-from textual.screen import ModalScreen
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Button, Label, Input, Select
-from connections import Connection, Env
+from textual.screen import ModalScreen
+from textual.widgets import Button, Input, Label, Select
+
+from connection.conn import Conn
+from connection.connection import Connection
 from connectors.connector import ConnectorType
 from connectors.exceptions import NewConnectionError
+from util.model import Env
 
 
 class NewConnectionScreen(ModalScreen):
@@ -70,7 +73,7 @@ class NewConnectionScreen(ModalScreen):
             port_int = None if port is None or len(port) == 0 else int(port)
 
             try:
-                conn: Connection = Connection(
+                conn: Conn = Conn(
                     name,
                     db,
                     host,
@@ -80,9 +83,10 @@ class NewConnectionScreen(ModalScreen):
                     ConnectorType[connectionType.upper()],
                     Env[env],
                 )
-                conn.test()
+                connection = Connection.from_conn(conn)
+                connection.test()
 
-                self.dismiss(conn)
+                self.dismiss(connection)
             except NewConnectionError as e:
                 self.app.action_notify(
                     f"{e}", title=f"{e.__class__.__name__}", severity="error"

@@ -1,8 +1,8 @@
-from connectors.connector import ConnectorType, Connector
-from connectors.sqlite_connector import SqliteConnector
-from connectors.postgres_connector import PostgreSqlConnector
+from connectors.connector import Connector, ConnectorType
 from connectors.dummy_connector import DummyConnector
 from connectors.exceptions import NewConnectionError
+from connectors.postgres_connector import PostgreSqlConnector
+from connectors.sqlite_connector import SqliteConnector
 
 
 def resolve_connector(

@@ -1,9 +1,10 @@
+import logging
 import sqlite3
 from sqlite3 import OperationalError
-import logging
-from connectors.connector import Connector, ConnectorType, ExecutionStatus
-from util.model import Schema, Table, Column
 from string import Template
+
+from connectors.connector import Connector, ConnectorType, ExecutionStatus
+from util.model import Column, Schema, Table
 
 logger = logging.getLogger(__name__)
 

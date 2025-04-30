@@ -2,3 +2,4 @@
 **.db
 conn.json
 .env
+env/
