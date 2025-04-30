@@ -10,9 +10,10 @@ from connectors.exceptions import NewConnectionError
 from util.model import Env
 
 
-class NewConnectionScreen(ModalScreen):
-    def __init__(self, existing_connections: [(str, str)]):
+class EditConnectionScreen(ModalScreen):
+    def __init__(self, existing_connections: [(str, str)], conn: Conn):
         self.existing_connections = existing_connections
+        self.conn = conn
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -22,34 +23,43 @@ class NewConnectionScreen(ModalScreen):
 
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
-                    yield Input(placeholder="Name", id="name")
+                    yield Input(placeholder="Name", id="name", value=self.conn.id)
                 with Vertical(classes="w3"):
                     yield Select(
                         ((line, line) for line in Env.list()),
                         allow_blank=False,
                         id="env",
+                        value=self.conn.env.value,
                     )
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w5"):
-                    yield Input(placeholder="User", id="user")
+                    yield Input(placeholder="User", id="user", value=self.conn.user)
                 with Vertical(classes="w5"):
-                    yield Input(placeholder="Password", id="password", password=True)
+                    yield Input(
+                        placeholder="Password",
+                        id="password",
+                        password=True,
+                        value=self.conn.passwd,
+                    )
 
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
-                    yield Input(placeholder="Database", id="database")
+                    yield Input(
+                        placeholder="Database", id="database", value=self.conn.database
+                    )
                 with Vertical(classes="w3"):
                     yield Select(
                         ((line, line) for line in ConnectorType.list()),
                         allow_blank=False,
                         id="connectionType",
+                        value=self.conn.connector_type.value
                     )
 
             with Horizontal(classes="container w1"):
                 with Vertical(classes="w7"):
-                    yield Input(placeholder="Host", id="host")
+                    yield Input(placeholder="Host", id="host", value=self.conn.host)
                 with Vertical(classes="w3"):
-                    yield Input(placeholder="Port", id="port")
+                    yield Input(placeholder="Port", id="port", value=str(self.conn.port))
 
             with Horizontal(classes="container padded"):
                 with Vertical(classes="w3"):

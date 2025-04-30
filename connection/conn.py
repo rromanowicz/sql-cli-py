@@ -82,6 +82,9 @@ class Conn:
         self.user = C.encrypt(self.user)
         self.passwd = C.encrypt(self.passwd)
 
+    def uid(self) -> str:
+        return f"{self.id}_{self.env.value}_{self.database}_{self.user}".lower()
+
 
 class ConnectionEncoder(JSONEncoder):
     def default(self, obj: Conn):

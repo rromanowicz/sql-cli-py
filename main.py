@@ -19,6 +19,7 @@ from textual.widgets import (
 import util.bindings as B
 import util.conn_file as F
 from components.menu import Menu
+from components.screens.edit_connection import EditConnectionScreen
 from components.screens.new_connection import NewConnectionScreen
 from components.screens.quit_screen import QuitScreen
 from connection.connection import Connection
@@ -57,7 +58,7 @@ class SiquelClient(App):
             with Horizontal(classes="row box"):
                 yield Header("Header")
             with Horizontal():
-                with Vertical(classes="box column1"):
+                with Vertical(classes="box column1", id="menu-container"):
                     self.menu = Menu(self.connections)
                     yield self.menu.tree
                 with TabbedContent(classes="box column4"):
@@ -161,12 +162,30 @@ class SiquelClient(App):
         self.push_screen(QuitScreen())
 
     def action_request_new_connection(self) -> None:
+        existing_connections: [(str, str)] = list(
+            map(lambda c: tuple([c.conn.env.name, c.id]), self.connections)
+        )
+
         def result(conn: Connection | None):
             if conn:
                 self.connections.append(conn)
                 self.menu.add_connection_node(conn)
 
-        self.push_screen(NewConnectionScreen(), result)
+        self.push_screen(NewConnectionScreen(existing_connections), result)
+
+    def action_edit_connection(self) -> None:
+        connection: Connection = self.menu.get_selected_connection()
+        existing_connections: [(str, str)] = list(
+            map(lambda c: tuple([c.conn.env.name, c.id]), self.connections)
+        )
+        existing_connections.remove(tuple([connection.conn.env.name, connection.id]))
+
+        def result(conn: Connection | None):
+            if conn:
+                self.update_connection(self.connections.index(connection), conn)
+
+        if connection:
+            self.push_screen(EditConnectionScreen(existing_connections, connection.conn), result)
 
     def action_save_connections(self) -> None:
         F.write_conn_file(self.connections)
@@ -178,6 +197,11 @@ class SiquelClient(App):
             return tabbed_content.active_pane.query_one(TextArea)
         except NoMatches:
             return None
+
+    def update_connection(self, idx: int, connection: Connection) -> None:
+        self.connections[idx].conn = connection.conn
+        self.connections[idx].conn.connector().clear()
+        self.menu.refresh_tree(self.connections)
 
 
 if __name__ == "__main__":

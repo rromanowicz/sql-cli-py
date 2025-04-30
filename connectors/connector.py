@@ -54,7 +54,7 @@ class Connector(ABC):
         pass
 
     def clear(self) -> None:
-        self.schema_dict = dict()
+        self.schema_dict.clear()
 
     def clear_by_type(self, type: str, schema: str, object: str = None) -> None:
         match type:

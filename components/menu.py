@@ -23,14 +23,16 @@ class Menu(App):
         self.connections = connections
         self.set_tree(Tree("Connections"))
         self.tree.root.expand()
+        self.render(connections)
 
+    def render(self, connections: [Connection]) -> None:
         for connection in connections:
             txt: Text = Text()
             txt.append(
                 f"[{connection.conn.env.name.upper()}] ",
                 style=f"bold {self.get_env_color(connection.conn.env)}",
             )
-            txt.append(connection.id)
+            txt.append(connection.conn.id)
             self.tree.root.add(txt)
 
     def get_env_color(self, env: Env) -> str:
@@ -163,7 +165,14 @@ class Menu(App):
 
     def get_connection_by_name(self, name: str) -> Connection:
         for connection in self.connections:
-            if self.strip_decorator(name) == connection.id:
+            c = name.split(" ")
+            connection_name = c[1]
+
+            connection_env = Env[c[0].replace("[", "").replace("]", "")]
+            if (
+                connection_name == connection.id
+                and connection_env == connection.conn.env
+            ):
                 return connection
 
     def strip_decorator(self, name: str) -> str:
@@ -257,5 +266,26 @@ class Menu(App):
             f"[{connection.conn.env.name.upper()}] ",
             style=f"bold {self.get_env_color(connection.conn.env)}",
         )
-        txt.append(connection.id)
+        txt.append(connection.conn.id)
         self.tree.root.add(txt)
+
+    def get_selected_connection(self) -> Connection | None:
+        tree: Tree = self.app.query_one(Tree)
+        if tree.cursor_node.is_root:
+            return None
+        base_node: TreeNode = self.get_base_node(tree.cursor_node)
+        return self.get_connection_by_name(base_node.label.plain)
+
+    def remove_node(self):
+        tree: Tree = self.app.query_one(Tree)
+        if tree.cursor_node.is_root:
+            return None
+        base_node: TreeNode = self.get_base_node(tree.cursor_node)
+        base_node.remove()
+
+    def refresh_tree(self, connections: [Connection]) -> None:
+        tree: Tree = self.app.query_one(Tree)
+        tree.root.remove_children()
+        self.connections = connections
+        # self.refresh()
+        self.render(connections)
