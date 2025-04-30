@@ -13,6 +13,7 @@ class Conn:
     """
     Connection details
     """
+
     id: str
     database: str
     host: str
@@ -84,6 +85,9 @@ class Conn:
 
     def uid(self) -> str:
         return f"{self.id}_{self.env.value}_{self.database}_{self.user}".lower()
+
+    def display_name(self) -> str:
+        return f"\[{self.env.name} {self.id}]"
 
 
 class ConnectionEncoder(JSONEncoder):

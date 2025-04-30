@@ -85,7 +85,7 @@ class SiquelClient(App):
                 )
                 event.node.collapse()
 
-    def get_connection_by_name(self, name: str) -> Connection:
+    def get_connection_by_id(self, name: str) -> Connection:
         for connection in self.connections:
             if self.strip_decorator(name) == connection.id:
                 return connection
@@ -104,7 +104,7 @@ class SiquelClient(App):
         try:
             tabbed_content.get_widget_by_id(connection.id)
         except NoMatches:
-            pane = TabPane(connection.id, id=connection.id)
+            pane = TabPane(connection.conn.display_name(), id=connection.id)
             input: Horizontal = Horizontal(
                 connection.input, classes="half_height", id="input"
             )
@@ -131,7 +131,7 @@ class SiquelClient(App):
         active_pane = self.app.query_one(TabbedContent).active_pane.id
         if active_pane == "initial":
             return
-        conn: Connection = self.get_connection_by_name(active_pane)
+        conn: Connection = self.get_connection_by_id(active_pane)
         conn.input.clear()
         conn.results.clear()
         conn.results.columns.clear()
@@ -140,14 +140,14 @@ class SiquelClient(App):
         active_pane = self.app.query_one(TabbedContent).active_pane.id
         if active_pane == "initial":
             return
-        conn: Connection = self.get_connection_by_name(active_pane)
+        conn: Connection = self.get_connection_by_id(active_pane)
         conn.format_query()
 
     def action_exec_query(self):
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
         if tabbed_content.active_pane.id == "initial":
             return
-        self.get_connection_by_name(tabbed_content.active_pane.id).exec_query()
+        self.get_connection_by_id(tabbed_content.active_pane.id).exec_query()
 
     def action_preview_data(self) -> None:
         self.menu.preview_data()
@@ -175,16 +175,16 @@ class SiquelClient(App):
 
     def action_edit_connection(self) -> None:
         connection: Connection = self.menu.get_selected_connection()
-        existing_connections: [(str, str)] = list(
-            map(lambda c: tuple([c.conn.env.name, c.id]), self.connections)
-        )
-        existing_connections.remove(tuple([connection.conn.env.name, connection.id]))
-
-        def result(conn: Connection | None):
-            if conn:
-                self.update_connection(self.connections.index(connection), conn)
-
         if connection:
+            existing_connections: [(str, str)] = list(
+                map(lambda c: tuple([c.conn.env.name, c.conn.id]), self.connections)
+            )
+            existing_connections.remove(tuple([connection.conn.env.name, connection.conn.id]))
+
+            def result(conn: Connection | None):
+                if conn:
+                    self.update_connection(self.connections.index(connection), conn)
+
             self.push_screen(EditConnectionScreen(existing_connections, connection.conn), result)
 
     def action_save_connections(self) -> None:

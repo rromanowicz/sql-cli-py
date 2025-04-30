@@ -23,7 +23,7 @@ class Connection:
     connected: bool = False
 
     def __init__(self, conn: Conn):
-        self.id = conn.id  # conn.uid()
+        self.id = conn.uid()
         self.tab = Tab(conn.id, id=conn.id)
         self.input = TextArea.code_editor("select 1", language="sql")
         self.results = DataTable()

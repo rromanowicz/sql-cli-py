@@ -90,7 +90,7 @@ class EditConnectionScreen(ModalScreen):
                 for connection in self.existing_connections:
                     if name == connection[1] and env == connection[0]:
                         raise NewConnectionError(
-                            f"Connection ' [  {env}] {name}' already exists"
+                            f"Connection '\[{env}] {name}' already exists"
                         )
                 conn: Conn = Conn(
                     name,

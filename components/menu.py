@@ -4,8 +4,7 @@ from textual.widgets import Tree
 from textual.widgets._tree import TreeNode
 
 from connection.connection import Connection
-from util.model import Env
-
+import util.util as U
 
 class Menu(App):
     SCHEMA = "[s]"
@@ -17,6 +16,7 @@ class Menu(App):
     VIEWS = "[V]"
     SEQUENCES = "[SQ]"
     tree: Tree[str] = []
+    id_map = dict()
 
     def __init__(self, connections: [Connection]) -> None:
         super().__init__()
@@ -30,21 +30,11 @@ class Menu(App):
             txt: Text = Text()
             txt.append(
                 f"[{connection.conn.env.name.upper()}] ",
-                style=f"bold {self.get_env_color(connection.conn.env)}",
+                style=f"bold {U.get_env_color(connection.conn.env)}",
             )
             txt.append(connection.conn.id)
             self.tree.root.add(txt)
-
-    def get_env_color(self, env: Env) -> str:
-        match env:
-            case Env.DEV:
-                return "green"
-            case Env.SIT:
-                return "yellow1"
-            case Env.SAT:
-                return "dark_orange"
-            case Env.PROD:
-                return "red"
+            self.id_map[txt.plain] = connection.id
 
     def set_tree(self, tree: Tree[str]):
         self.tree = tree
@@ -134,9 +124,14 @@ class Menu(App):
                 return Connection
             return None
 
+    def get_connection_by_id(self, id: str) -> Connection:
+        for connection in self.connections:
+            if connection.id == self.id_map[id]:
+                return connection
+
     def get_connection_by_node(self, node: TreeNode) -> Connection:
         base_name: str = self.get_base_node(node).label.plain
-        return self.get_connection_by_name(base_name)
+        return self.get_connection_by_id(base_name)
 
     def get_base_node(self, node: TreeNode) -> TreeNode:
         parent_node: TreeNode = node.parent
@@ -162,18 +157,6 @@ class Menu(App):
                 return node
             else:
                 return self.get_schema_node(node.parent)
-
-    def get_connection_by_name(self, name: str) -> Connection:
-        for connection in self.connections:
-            c = name.split(" ")
-            connection_name = c[1]
-
-            connection_env = Env[c[0].replace("[", "").replace("]", "")]
-            if (
-                connection_name == connection.id
-                and connection_env == connection.conn.env
-            ):
-                return connection
 
     def strip_decorator(self, name: str) -> str:
         if name is None or not name.startswith("["):
@@ -274,7 +257,7 @@ class Menu(App):
         if tree.cursor_node.is_root:
             return None
         base_node: TreeNode = self.get_base_node(tree.cursor_node)
-        return self.get_connection_by_name(base_node.label.plain)
+        return self.get_connection_by_node(base_node)
 
     def remove_node(self):
         tree: Tree = self.app.query_one(Tree)
