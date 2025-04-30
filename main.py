@@ -30,11 +30,6 @@ logger = logging.getLogger(__name__)
 class SiquelClient(App):
     CSS_PATH = "layout.tcss"
     BINDINGS = B.ALL_BINDINGS
-    SCHEMA = "[S]"
-    TABLE = "[T]"
-    VIEW = "[V]"
-    SEQUENCE = "[Sq]"
-    COLUMN = "[C]"
 
     active_panel = reactive(Widget, bindings=True)
 
