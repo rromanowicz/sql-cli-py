@@ -6,6 +6,7 @@ import psycopg
 from connectors.connector import Connector, ConnectorType, ExecutionStatus
 from connectors.exceptions import NewConnectionError
 from util.model import Column, Schema, Table
+from util.crypto import decrypt
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class PostgreSqlConnector(Connector):
             raise NewConnectionError(e.__str__())
 
     def connection_string(self) -> str:
-        return f"dbname={self.database} host={self.host} port={self.port} user={self.user} password={self.passw}"
+        return f"dbname={decrypt(self.database)} host={decrypt(self.host)} port={self.port} user={decrypt(self.user)} password={decrypt(self.passw)}"
 
     def get_schemas(self) -> list[Schema]:
         results = self.query(self.SCHEMAS_QUERY)

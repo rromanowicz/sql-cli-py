@@ -247,7 +247,7 @@ class Menu(App):
         txt: Text = Text()
         txt.append(
             f"[{connection.conn.env.name.upper()}] ",
-            style=f"bold {self.get_env_color(connection.conn.env)}",
+            style=f"bold {U.get_env_color(connection.conn.env)}",
         )
         txt.append(connection.conn.id)
         self.tree.root.add(txt)
