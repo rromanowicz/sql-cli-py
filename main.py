@@ -150,6 +150,8 @@ class SiquelClient(App):
         self.get_connection_by_id(tabbed_content.active_pane.id).exec_query()
 
     def action_preview_data(self) -> None:
+        tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
+        tabbed_content.active = self.menu.get_selected_connection().id
         self.menu.preview_data()
 
     def action_refresh_connection(self) -> None:
@@ -212,6 +214,7 @@ class SiquelClient(App):
         try:
             return tabbed_content.active_pane.query_one(TextArea)
         except NoMatches:
+
             return None
 
     def update_connection(self, idx: int, connection: Connection) -> None:
