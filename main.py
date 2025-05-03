@@ -72,18 +72,18 @@ class SiquelClient(App):
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
         label: str = event.node.label.plain
         if label.startswith("["):
-            try:
-                self.menu.fill_child_nodes(event)
-                conn: Connection = self.menu.get_connection_by_node(event.node)
-                if conn:
-                    print(conn)
-                    logger.info(conn)
-                    self.add_connection_tab(conn)
-            except Exception as e:
-                self.app.action_notify(
-                    f"{e}", title=f"{e.__class__.__name__}", severity="error"
-                )
-                event.node.collapse()
+            # try:
+            self.menu.fill_child_nodes(event)
+            conn: Connection = self.menu.get_connection_by_node(event.node)
+            if conn:
+                print(conn)
+                logger.info(conn)
+                self.add_connection_tab(conn)
+            # except Exception as e:
+            #     self.app.action_notify(
+            #         f"{e}", title=f"{e.__class__.__name__}", severity="error"
+            #     )
+            #     event.node.collapse()
 
     def get_connection_by_id(self, name: str) -> Connection:
         for connection in self.connections:
@@ -179,17 +179,33 @@ class SiquelClient(App):
             existing_connections: [(str, str)] = list(
                 map(lambda c: tuple([c.conn.env.name, c.conn.id]), self.connections)
             )
-            existing_connections.remove(tuple([connection.conn.env.name, connection.conn.id]))
+            existing_connections.remove(
+                tuple([connection.conn.env.name, connection.conn.id])
+            )
 
             def result(conn: Connection | None):
                 if conn:
                     self.update_connection(self.connections.index(connection), conn)
 
-            self.push_screen(EditConnectionScreen(existing_connections, connection.conn), result)
+            self.push_screen(
+                EditConnectionScreen(existing_connections, connection.conn), result
+            )
 
     def action_save_connections(self) -> None:
         F.write_conn_file(self.connections)
         self.app.action_notify(f"Saved {len(self.connections)} connections", "Saved")
+
+    def action_tree_left(self) -> None:
+        self.menu.tree.action_cursor_parent()
+
+    def action_tree_down(self) -> None:
+        self.menu.tree.action_cursor_down()
+
+    def action_tree_up(self) -> None:
+        self.menu.tree.action_cursor_up()
+
+    def action_tree_right(self) -> None:
+        self.menu.tree.action_select_cursor()
 
     def get_current_input(self) -> TextArea | None:
         tabbed_content: TabbedContent = self.app.query_one(TabbedContent)

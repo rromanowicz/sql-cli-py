@@ -63,7 +63,7 @@ class Conn:
         host: str = C.decrypt(input.get("host"))
         port: int = 0 if input.get("port") is None else input.get("port")
         user: str = C.decrypt(input.get("user"))
-        passwd: str = C.decrypt(input.get("password"))
+        passwd: str = C.decrypt(input.get("passwd"))
         connector_type: str = str(input.get("type")).upper()
         env: str = str(input.get("env"))
         return self(
@@ -87,7 +87,7 @@ class Conn:
         return f"{self.id}_{self.env.value}_{self.database}_{self.user}".lower()
 
     def display_name(self) -> str:
-        return f"\[{self.env.name} {self.id}]"
+        return f"\[{self.env.name}] {self.id}"
 
 
 class ConnectionEncoder(JSONEncoder):

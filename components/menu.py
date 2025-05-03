@@ -250,6 +250,7 @@ class Menu(App):
             style=f"bold {U.get_env_color(connection.conn.env)}",
         )
         txt.append(connection.conn.id)
+        self.id_map[txt.plain] = connection.id
         self.tree.root.add(txt)
 
     def get_selected_connection(self) -> Connection | None:

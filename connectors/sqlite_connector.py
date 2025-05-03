@@ -2,10 +2,10 @@ import logging
 import sqlite3
 from sqlite3 import OperationalError
 from string import Template
-from util.crypto import decrypt
 
 from connectors.connector import Connector, ConnectorType, ExecutionStatus
 from util.model import Column, Schema, Table
+from util.crypto import decrypt
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class SqliteConnector(Connector):
             conn.cursor()
 
     def connection_string(self) -> str:
-        return f"{decrypt(self.database)}.db"
+        return f"{self.database}.db"
 
     def get_schemas(self) -> list[Schema]:
         schemas = list()
