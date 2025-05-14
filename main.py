@@ -22,6 +22,7 @@ from components.menu import Menu
 from components.screens.edit_connection import EditConnectionScreen
 from components.screens.new_connection import NewConnectionScreen
 from components.screens.quit_screen import QuitScreen
+from components.screens.delete_screen import DeleteScreen
 from connection.connection import Connection
 from util.crypto import load_env
 
@@ -72,18 +73,18 @@ class SiquelClient(App):
     def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
         label: str = event.node.label.plain
         if label.startswith("["):
-            # try:
-            self.menu.fill_child_nodes(event)
-            conn: Connection = self.menu.get_connection_by_node(event.node)
-            if conn:
-                print(conn)
-                logger.info(conn)
-                self.add_connection_tab(conn)
-            # except Exception as e:
-            #     self.app.action_notify(
-            #         f"{e}", title=f"{e.__class__.__name__}", severity="error"
-            #     )
-            #     event.node.collapse()
+            try:
+                self.menu.fill_child_nodes(event)
+                conn: Connection = self.menu.get_connection_by_node(event.node)
+                if conn:
+                    print(conn)
+                    logger.info(conn)
+                    self.add_connection_tab(conn)
+            except Exception as e:
+                self.app.action_notify(
+                    f"{e}", title=f"{e.__class__.__name__}", severity="error"
+                )
+                event.node.collapse()
 
     def get_connection_by_id(self, name: str) -> Connection:
         for connection in self.connections:
@@ -197,6 +198,27 @@ class SiquelClient(App):
         F.write_conn_file(self.connections)
         self.app.action_notify(f"Saved {len(self.connections)} connections", "Saved")
 
+    def action_delete_connection(self) -> None:
+        connection: Connection = self.menu.get_selected_connection()
+        if connection:
+
+            def result(confirmed: bool):
+                if confirmed:
+                    connection.connector.clear()
+                    tabbed_content: TabbedContent = self.app.query_one(TabbedContent)
+                    try:
+                        tabbed_content.active = "initial"
+                        tab = tabbed_content.get_widget_by_id(connection.id)
+                        tabbed_content.remove_pane(tab.id)
+                        tabbed_content.refresh()
+                    except NoMatches:
+                        ...
+
+                    self.connections.remove(connection)
+                    self.menu.refresh_tree(self.connections)
+
+            self.push_screen(DeleteScreen(connection.conn.display_name()), result)
+
     def action_tree_left(self) -> None:
         self.menu.tree.action_cursor_parent()
 
@@ -214,7 +236,6 @@ class SiquelClient(App):
         try:
             return tabbed_content.active_pane.query_one(TextArea)
         except NoMatches:
-
             return None
 
     def update_connection(self, idx: int, connection: Connection) -> None:

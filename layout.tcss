@@ -43,7 +43,7 @@
   height: 100%;
 }
 
-QuitScreen, NewConnectionScreen, EditConnectionScreen {
+QuitScreen, DeleteScreen, NewConnectionScreen, EditConnectionScreen {
     align: center middle;
 }
 
